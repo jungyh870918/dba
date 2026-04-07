@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 001</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn: #92400e;
+      --warn-soft: #fff7ed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: white;
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,.86);
+    }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 26px;
+    }
+    h3 {
+      margin: 26px 0 10px;
+      font-size: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .point, .warn, .flow {
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid #fed7aa;
+    }
+    .flow {
+      background: #111827;
+      color: #f9fafb;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    ul {
+      padding-left: 20px;
+      margin: 10px 0;
+    }
+    li { margin: 6px 0; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .small { font-size: 14px; color: var(--muted); }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 001</h1>
+      <p>범위: PDF 9~12페이지 + 프로세스 모델 + Too Many Connections / DB Pooling</p>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">← 메인 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">1단계 · 페이지 매칭</div>
+      <h2>9~12페이지가 다루는 핵심 위치</h2>
+      <p>이 구간은 Oracle 전체 구조에서 <strong>메모리, 프로세스, 파일</strong>이 한 번에 연결되는 첫 지점이다. 여기서 잡아야 하는 축은 세 가지다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>전체 아키텍처</h3>
+          <ul>
+            <li>Database vs Instance</li>
+            <li>SGA / PGA</li>
+            <li>Server Process / Background Process</li>
+            <li>PMON / SMON / DBWR / LGWR / CKPT</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>핵심 메모리</h3>
+          <ul>
+            <li>Data Buffer Cache</li>
+            <li>Redo Log Buffer</li>
+            <li>Shared Pool의 역할과 이후 연결 포인트</li>
+          </ul>
+        </div>
+      </div>
+      <div class="point">
+        <strong>핵심 포인트:</strong> 9~12페이지는 단순히 메모리 이름을 외우는 구간이 아니라, <strong>왜 Oracle이 데이터를 바로 쓰지 않고 로그를 먼저 쓰는지</strong>를 이해하는 구간이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 개념 설명</div>
+      <h2>Database vs Instance</h2>
+      <h3>Database는 디스크 위의 파일 집합이다</h3>
+      <ul>
+        <li>Datafile</li>
+        <li>Control file</li>
+        <li>Redo log file</li>
+        <li>Archive log</li>
+      </ul>
+      <p>이 파일들은 스스로 일하지 않는다. 그냥 저장되어 있는 대상이다. 즉, <strong>죽어 있는 구조</strong>다.</p>
+
+      <h3>Instance는 DB를 움직이게 만드는 실행 주체다</h3>
+      <ul>
+        <li>SGA: 여러 프로세스가 함께 보는 공유 메모리</li>
+        <li>Background Process: 실제 쓰기, 복구, 체크포인트를 담당하는 프로세스</li>
+      </ul>
+
+      <div class="flow">User → Server Process → SGA → Background Process → Disk(Database)</div>
+
+      <p>즉, 사용자는 디스크 파일에 직접 접근하지 않는다. <strong>항상 Instance를 통과해서만</strong> 접근한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 내부 동작</div>
+      <h2>SGA 안에서 무슨 일이 일어나는가</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Shared Pool</h3>
+          <ul>
+            <li>Library Cache: SQL, 실행계획, PL/SQL 캐시</li>
+            <li>Dictionary Cache: 오브젝트/테이블스페이스/파일 메타정보 캐시</li>
+          </ul>
+          <p class="small">이번 범위에서는 구조만 잡고, 뒤에서 파싱과 라이브러리 캐시 튜닝으로 확장된다.</p>
+        </div>
+        <div class="card">
+          <h3>Data Buffer Cache</h3>
+          <p>Datafile에서 읽은 블록을 메모리에 올려두는 공간이다. Direct Path Read를 제외하면 대부분 여기서 읽고 여기서 수정이 시작된다.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <h3>Redo Log Buffer</h3>
+        <p>변경사항 로그를 잠시 담아두는 공간이다. Oracle의 핵심은 데이터를 먼저 디스크에 쓰는 것이 아니라, <strong>변경 이력을 먼저 안전하게 남기는 것</strong>이다.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 핵심 원리</div>
+      <h2>WAL (Write Ahead Logging)</h2>
+      <p>9~12페이지에서 가장 중요한 개념이다. 순서를 틀리면 안 된다.</p>
+      <div class="flow">1. UPDATE 발생
+2. Redo Log Buffer 먼저 기록
+3. Data Buffer Cache의 블록 변경
+4. COMMIT 시 LGWR가 Redo Log File에 기록
+5. DBWR가 나중에 Datafile에 반영</div>
+
+      <h3>왜 로그를 먼저 쓰는가</h3>
+      <p>Datafile 갱신은 랜덤 write가 많아 느리다. 반면 Redo Log는 append 방식이라 훨씬 빠르다. 그래서 Oracle은 <strong>데이터 정합성은 로그로 보장하고, 실제 데이터 쓰기는 뒤로 미룬다</strong>.</p>
+
+      <div class="point">
+        <strong>Fast Commit의 본질:</strong> Commit은 “데이터 파일에 다 썼다”가 아니라, <strong>복구 가능한 로그가 디스크에 안전하게 기록되었다</strong>는 뜻이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 버퍼 캐시</div>
+      <h2>Data Buffer Cache에서 UPDATE가 일어날 때</h2>
+      <p>예를 들어 20개 블록이 변경되면, 8KB 블록 기준 약 160KB의 변경이 메모리에서 먼저 일어난다. 중요한 점은 <strong>COMMIT 시점에도 Datafile에 즉시 쓰지 않는다는 것</strong>이다.</p>
+      <ul>
+        <li>변경은 먼저 메모리(Data Buffer Cache)에 반영된다.</li>
+        <li>Commit은 Redo 기록 완료로 끝난다.</li>
+        <li>Datafile 반영은 DBWR가 나중에 한다.</li>
+      </ul>
+      <div class="warn">
+        <strong>실무에서 자주 나오는 오해:</strong> “commit 했으니 파일에도 바로 저장됐겠지”는 틀린 생각이다. Oracle은 의도적으로 그렇게 하지 않는다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">3단계 · 흐름 연결</div>
+      <h2>지금 보는 페이지가 전체 구조에서 어디인가</h2>
+      <div class="flow">[User]
+   ↓
+[Server Process]
+   ↓
+[SGA]
+   ├─ Shared Pool   : SQL 확인 / 메타정보 확인
+   ├─ Buffer Cache  : 블록 읽기 / 변경
+   └─ Redo Buffer   : 변경 이력 기록
+   ↓
+[LGWR → Redo Log File]
+[DBWR → Datafile (나중)]</div>
+      <p>이 흐름은 뒤에서 undo, checkpoint, recovery, segment 구조, 튜닝 개념까지 전부 이어진다. 지금은 뼈대를 세우는 단계다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 프로세스 관계</div>
+      <h2>한 사용자가 접속할 때 프로세스는 어떻게 연결되는가</h2>
+      <p>기본 모델은 <strong>Dedicated Server</strong>다. 이 구조에서는 서버 프로세스 1개가 모든 유저를 round-robin으로 처리하지 않는다.</p>
+      <div class="flow">[User1] → [Server Process1]
+[User2] → [Server Process2]
+[User3] → [Server Process3]</div>
+      <p>즉, 기본은 <strong>유저 1명 ↔ 서버 프로세스 1개</strong>다.</p>
+
+      <h3>왜 1:1 구조를 쓰는가</h3>
+      <ul>
+        <li>세션 상태, 커서 상태, 트랜잭션 상태를 분리해야 한다.</li>
+        <li>PGA가 프로세스 전용 메모리이기 때문이다.</li>
+        <li>동시 요청 처리는 DB가 직접 round-robin 하는 것이 아니라, OS 스케줄러가 각 프로세스를 병렬 스케줄링한다.</li>
+      </ul>
+
+      <div class="point">
+        <strong>정리:</strong> Oracle 기본 구조는 “서버 프로세스 하나가 여러 유저를 순차 처리”가 아니라, <strong>여러 서버 프로세스가 동시에 동작</strong>하는 구조다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 예외 구조</div>
+      <h2>Shared Server는 무엇이 다른가</h2>
+      <p>예외적으로 Shared Server 구조에서는 여러 사용자의 요청이 Dispatcher를 거쳐 Shared Server 풀로 들어간다.</p>
+      <div class="flow">User → Dispatcher → Shared Server Pool</div>
+      <p>이 경우에는 여러 사용자의 요청을 제한된 수의 서버 프로세스가 나눠 처리하므로, 겉으로 보면 순차적 또는 큐 기반 처리처럼 보일 수 있다. 다만 실무의 기본 설명은 Dedicated Server를 기준으로 잡는 것이 맞다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 운영 문제</div>
+      <h2>Too Many Connections가 왜 터지는가</h2>
+      <p>Oracle 기본 구조에서는 연결 수가 곧 프로세스 수가 되고, 프로세스 수는 다시 PGA 사용량과 연결된다.</p>
+      <div class="flow">User 1명 → Server Process 1개 → PGA 1개
+
+User 1000명 → Server Process 1000개 → PGA 1000개</div>
+      <ul>
+        <li>메모리 사용량 폭증</li>
+        <li>OS context switching 증가</li>
+        <li>프로세스/세션 한도 초과</li>
+      </ul>
+      <p>그래서 ORA-00020, ORA-12516 같은 문제가 발생할 수 있다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 해결 구조</div>
+      <h2>DB Pooling의 개념</h2>
+      <p>Connection Pooling은 DB 연결을 사용자 수만큼 만들지 않고, <strong>미리 일정 개수만 만들어 놓고 빌려 쓰는 방식</strong>이다.</p>
+      <div class="flow">[User 1000명]
+       ↓
+[WAS Connection Pool (예: 50개)]
+       ↓
+[DB Server Process 50개]</div>
+      <p>핵심은 <strong>User 수와 DB connection 수를 분리</strong>하는 것이다.</p>
+
+      <h3>동작 방식</h3>
+      <ul>
+        <li>요청이 오면 pool에서 connection을 하나 가져온다.</li>
+        <li>작업이 끝나면 연결을 종료하지 않고 pool에 반납한다.</li>
+        <li>재사용하므로 생성 비용을 줄이고 DB를 보호한다.</li>
+      </ul>
+
+      <div class="point">
+        <strong>핵심 효과:</strong> DB 보호, 연결 생성 비용 감소, 부하 안정화.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 실무 포인트</div>
+      <h2>Pooling 운영 시 주의할 점</h2>
+      <ul>
+        <li><strong>Pool size가 너무 작으면</strong> 애플리케이션이 connection을 기다리며 대기한다.</li>
+        <li><strong>Pool size가 너무 크면</strong> 결국 DB 프로세스 수가 늘어나 DB가 다시 힘들어진다.</li>
+        <li><strong>Idle connection</strong>이 오래 살아 있으면 자원 낭비가 생긴다.</li>
+        <li><strong>Long transaction</strong>이 connection을 오래 점유하면 pool 고갈이 발생한다.</li>
+        <li><strong>Dead connection</strong>이 남아 있으면 pool에서 장애가 반복된다.</li>
+      </ul>
+      <p>그래서 WAS 쪽에서는 max pool size, min pool size, timeout, validation query 설정이 중요하고, DB 쪽에서는 processes, sessions 한도를 함께 봐야 한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">5단계 · 핵심 요약</div>
+      <h2>이번 범위 요약</h2>
+      <div class="flow">Oracle은 데이터를 바로 디스크에 쓰는 DB가 아니다.
+변경 이력(Redo)을 먼저 안전하게 남기고,
+나중에 DBWR가 Datafile에 반영한다.
+
+기본 접속 구조는 User 1명 = Server Process 1개이며,
+Too Many Connections 문제는 이 구조 때문에 발생한다.
+
+DB Pooling은 User 수와 DB connection 수를 분리해서
+DB를 보호하는 핵심 운영 장치다.</div>
+    </section>
+  </div>
+</body>
+</html>
