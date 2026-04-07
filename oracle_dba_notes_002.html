@@ -1,0 +1,636 @@
+<!-- oracle_dba_notes_002.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 002</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.75;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.86);
+    }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    p { margin: 10px 0; }
+    ul {
+      margin: 10px 0;
+      padding-left: 22px;
+    }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 18px 0;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 002</h1>
+      <p>범위: PDF 13~18페이지 + 이 범위에서 추가로 정리한 PGA / Sort / Hash / OLTP vs Batch / Hard Parsing / Bind Variable / PGA 위험성</p>
+    </header>
+
+    <nav class="nav">
+      <a href="oracle_dba_index.html">← 메인 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">1단계 · 페이지 매칭</div>
+      <h2>13~18페이지가 전체 구조에서 차지하는 위치</h2>
+      <p>이 구간은 9~12페이지에서 잡은 큰 구조 안으로 들어가서, <strong>메모리 엔진이 실제로 어떻게 회전하는지</strong>를 설명하는 핵심 범위다.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>직접 등장하는 개념</h3>
+          <ul>
+            <li>SGA / PGA</li>
+            <li>Data Buffer Cache</li>
+            <li>Redo Log Buffer</li>
+            <li>Shared Pool</li>
+            <li>Library Cache / Dictionary Cache</li>
+            <li>Dirty / Free / Pinned Buffer</li>
+            <li>LRU</li>
+            <li>Write Ahead Logging</li>
+            <li>Checkpoint</li>
+            <li>Instance Recovery</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>이후로 이어지는 연결 개념</h3>
+          <ul>
+            <li>SELECT = consistent read / UPDATE = current read</li>
+            <li>undo 역할</li>
+            <li>DBWR / LGWR / CKPT / SMON 협업</li>
+            <li>하드파싱과 Shared Pool 튜닝</li>
+            <li>배치 / 병렬처리 시 PGA 폭증</li>
+            <li>SGA / PGA 비율 전략</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="point">
+        <strong>핵심 포인트:</strong> 13~18페이지는 단순한 메모리 용어 소개가 아니라, <strong>SQL 한 번 실행될 때 메모리에서 무슨 일이 벌어지는지</strong>를 이해하는 구간이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 메모리 설계 철학</div>
+      <h2>SGA와 PGA를 왜 나눴는가</h2>
+
+      <h3>SGA: 모두가 같이 써야 하는 메모리</h3>
+      <p>SGA는 인스턴스 전체가 공유하는 메모리다. 여기에 Shared Pool, DB Buffer Cache, Redo Log Buffer, Java Pool, Large Pool 같은 영역이 들어간다.</p>
+      <ul>
+        <li><strong>같은 데이터 블록</strong>을 여러 세션이 재사용할 수 있어야 한다.</li>
+        <li><strong>같은 SQL과 실행계획</strong>을 재사용해야 CPU 낭비를 줄일 수 있다.</li>
+        <li><strong>테이블, 컬럼, 파일, 테이블스페이스 메타정보</strong>는 모든 세션이 공통으로 봐야 한다.</li>
+      </ul>
+
+      <h3>PGA: 공유하면 안 되는 메모리</h3>
+      <p>PGA는 서버 프로세스 전용 메모리다. 여기에는 정렬, 해시, 세션 상태, 커서 상태 같은 개별 작업 정보가 들어간다.</p>
+      <ul>
+        <li>정렬 결과는 사용자별로 달라서 공유하면 안 된다.</li>
+        <li>해시 조인 작업공간은 세션별 계산 결과라 분리되어야 한다.</li>
+        <li>트랜잭션 상태와 커서 상태는 개인 작업 정보이므로 공유하면 꼬인다.</li>
+      </ul>
+
+      <div class="flow">SGA = 공용 캐시
+PGA = 프로세스별 작업 공간</div>
+
+      <div class="warn">
+        <strong>설계 이유를 실무적으로 보면:</strong> 공유하면 효율은 좋아지지만 충돌 비용이 생기고, 분리하면 충돌은 줄지만 메모리 사용량이 커진다. Oracle은 이 둘을 나눠서 설계했다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 공유 메모리의 대가</div>
+      <h2>SGA는 왜 latch / lock이 필요한가</h2>
+      <p>SGA는 여러 프로세스가 동시에 접근하는 공유 구조이므로, 아무 제어 없이 동시에 건드리면 메모리 구조가 깨진다. 그래서 Oracle은 latch, buffer lock, library cache lock / pin 같은 직렬화 장치를 둔다.</p>
+
+      <div class="point">
+        <strong>의미:</strong> SGA는 빠른 캐시이지만, 공유 구조이기 때문에 <strong>충돌 관리 비용</strong>을 반드시 감수해야 한다. 따라서 메모리를 크게만 준다고 끝나는 것이 아니라, 공유 구조의 병목까지 함께 봐야 한다.
+      </div>
+
+      <ul>
+        <li>library cache contention</li>
+        <li>buffer busy waits</li>
+        <li>latch 계열 대기</li>
+      </ul>
+
+      <p>이런 성능 문제들은 결국 “공유 구조”라는 특성에서 출발한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 데이터 작업장</div>
+      <h2>DB Buffer Cache: 데이터가 실제로 머무는 곳</h2>
+      <p>DB Buffer Cache는 datafile의 블록을 메모리에 올려 두는 공간이다. Direct Path Read를 제외하면 대부분의 읽기와 수정은 이 캐시를 거친다.</p>
+
+      <div class="flow">Datafile = 원본 저장소
+Buffer Cache = 현재 작업장</div>
+
+      <h3>왜 디스크를 직접 수정하지 않고 버퍼 캐시를 거치는가</h3>
+      <ul>
+        <li>디스크는 느리다.</li>
+        <li>한 번 읽은 블록은 다시 쓸 가능성이 높다.</li>
+        <li>변경을 메모리에서 모아두고 나중에 디스크에 반영하면 효율적이다.</li>
+      </ul>
+
+      <div class="point">
+        <strong>핵심:</strong> Oracle은 “파일 중심”으로 일하는 DB가 아니라, <strong>메모리 중심으로 작업하고 디스크는 나중에 동기화하는 DB</strong>다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 버퍼 상태</div>
+      <h2>Free / Dirty / Pinned Buffer는 왜 중요한가</h2>
+
+      <h3>Free Buffer</h3>
+      <p>비어 있거나 재사용 가능한 버퍼다. 새로운 블록을 읽어올 때 필요하다.</p>
+
+      <h3>Dirty Buffer</h3>
+      <p>메모리에서 변경되었지만 아직 datafile에 반영되지 않은 버퍼다. 언젠가 DBWR가 디스크로 내려야 한다.</p>
+
+      <h3>Pinned Buffer</h3>
+      <p>현재 누군가가 읽거나 수정 중인 버퍼다. 사용 중이라 쉽게 밀어낼 수 없다.</p>
+
+      <div class="warn">
+        <strong>실무 해석:</strong> dirty buffer가 많아진다는 것은 단순히 “변경이 많다”가 아니라, <strong>DBWR가 dirty를 디스크로 내리는 속도가 workload를 못 따라갈 수 있다</strong>는 뜻이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 캐시 유지 정책</div>
+      <h2>LRU가 왜 필요한가</h2>
+      <p>버퍼 캐시는 무한대가 아니기 때문에, 어떤 블록을 남기고 어떤 블록을 밀어낼지 정해야 한다. 그 기본 원리가 LRU다.</p>
+
+      <div class="flow">MRU end  ← 최근 사용
+...
+LRU end  ← 오래 안 쓴 버퍼</div>
+
+      <p>오래 안 쓴 블록부터 aging out 시킨다. 최근에 쓴 블록은 다시 쓸 가능성이 높기 때문이다.</p>
+
+      <div class="warn">
+        <strong>버퍼 캐시가 부족하면:</strong> 자주 쓰는 블록도 빨리 쫓겨나고, 다시 읽으려면 디스크 I/O가 발생한다. 결과적으로 physical read 증가와 성능 저하로 이어진다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 복구의 출발점</div>
+      <h2>Redo Log Buffer는 단순 로그가 아니다</h2>
+      <p>Redo Log Buffer에는 변경 이력이 담긴다. 이건 단순한 기록이 아니라, 인스턴스 장애 후 데이터를 다시 일관된 상태로 돌려놓는 근거다.</p>
+
+      <ul>
+        <li>어떤 DML이 있었는지</li>
+        <li>before / after 관련 정보</li>
+        <li>SCN</li>
+        <li>commit 관련 정보</li>
+      </ul>
+
+      <div class="flow">“데이터 파일보다 redo를 먼저 안전하게 남겨라”</div>
+
+      <p>이 철학 덕분에 datafile 쓰기가 늦어져도, redo만 안전하게 남아 있으면 나중에 복구할 수 있다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · WAL 심화</div>
+      <h2>Write Ahead Logging은 내부적으로 어떻게 움직이는가</h2>
+
+      <div class="flow">1. 서버 프로세스가 변경 시작
+2. redo 정보를 redo log buffer에 기록
+3. data buffer cache의 블록 수정
+4. commit 시 LGWR가 redo log file에 기록
+5. DBWR는 나중에 datafile 반영</div>
+
+      <p>이 구조에서 중요한 점은 <strong>DBWR보다 LGWR가 논리적으로 먼저</strong>라는 점이다. datafile에 쓰기 전에 redo가 디스크에 있어야 장애 시 복구가 가능하기 때문이다.</p>
+
+      <div class="point">
+        <strong>Fast Commit의 본질:</strong> commit은 “datafile까지 다 반영됐다”가 아니라, <strong>복구 가능한 redo가 디스크에 안전하게 저장됐다</strong>는 뜻이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 장애 후 복구</div>
+      <h2>Instance Recovery: Roll Forward와 Roll Back</h2>
+      <p>인스턴스 장애가 나면 메모리는 날아가지만 redo log file은 디스크에 남아 있다. Oracle은 그 redo를 바탕으로 복구한다.</p>
+
+      <h3>Roll Forward</h3>
+      <p>최종 checkpoint 이후 redo를 다시 적용해서, 원래 메모리에 있었어야 할 변경을 data block에 재생한다.</p>
+
+      <h3>Roll Back</h3>
+      <p>그중 commit되지 않은 작업은 undo를 이용해 제거한다.</p>
+
+      <div class="flow">Roll Forward = redo 재생
+Roll Back    = commit 안 된 작업 제거</div>
+
+      <div class="warn">
+        <strong>처음 보면 이상하지만 핵심은 이것이다:</strong> redo는 “발생한 사실 전체”를 재생하고, 그 후에 트랜잭션 완료 여부를 보고 undo로 정리한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 기준점</div>
+      <h2>Checkpoint는 왜 존재하는가</h2>
+      <p>Checkpoint는 단순한 저장 시점이 아니라, <strong>복구 시작점을 줄이기 위한 기준점</strong>이다.</p>
+
+      <ul>
+        <li>이 시점까지는 최소한 datafile 반영이 되었음을 의미한다.</li>
+        <li>장애 시 redo를 먼 과거부터 읽지 않고, checkpoint 이후 구간만 보면 된다.</li>
+      </ul>
+
+      <div class="point">
+        <strong>실무 감각으로 보면:</strong> checkpoint는 성능보다도 <strong>recovery 시간 제어 장치</strong>라는 의미가 더 크다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · SQL 재사용 공간</div>
+      <h2>Shared Pool: Dictionary Cache와 Library Cache</h2>
+
+      <h3>Dictionary Cache</h3>
+      <p>오브젝트, tablespace, datafile 등 메타데이터가 들어간다. SQL은 실행 전에 이 메타정보를 먼저 확인해야 하므로, dictionary cache는 SQL 실행의 전제조건이다.</p>
+
+      <h3>Library Cache</h3>
+      <p>SQL 문장, 실행계획, stored procedure 등이 들어간다. 실행계획 생성은 비싼 작업이므로, 여기서 재사용해야 CPU 낭비를 줄일 수 있다.</p>
+
+      <div class="flow">Dictionary Cache = 메타정보 확인
+Library Cache    = SQL / 실행계획 재사용</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 실행 메모리</div>
+      <h2>데이터는 Buffer Cache, 계산은 PGA에서 한다</h2>
+      <p>추가 질문의 핵심은 이것이다. 데이터를 읽는 위치와, 그 데이터를 가지고 계산하는 위치는 다르다.</p>
+
+      <div class="flow">Disk (Datafile)
+  ↓
+Buffer Cache (데이터 읽기)
+  ↓
+Server Process
+  ↓
+PGA (정렬 / 해시 / 조인)</div>
+
+      <div class="point">
+        <strong>한 줄 정리:</strong> <strong>Buffer Cache는 원본 데이터를 담는 저장소</strong>이고, <strong>PGA는 그 데이터를 가지고 계산하는 작업장</strong>이다.
+      </div>
+
+      <h3>Sort는 무엇을 대상으로 하나</h3>
+      <p>예를 들어 ORDER BY가 있으면, 서버 프로세스는 먼저 테이블 블록을 Buffer Cache에서 읽어 row들을 가져오고, 그 <strong>결과 row 집합</strong>을 PGA에서 정렬한다.</p>
+
+      <div class="flow">SELECT * FROM orders ORDER BY order_date;
+
+1. orders 블록을 Buffer Cache에서 읽음
+2. 결과 row들을 PGA로 가져옴
+3. PGA에서 정렬 수행</div>
+
+      <h3>Hash는 무엇을 대상으로 하나</h3>
+      <p>예를 들어 Hash Join에서는 한쪽 입력 집합을 PGA에 올려 hash table을 만들고, 다른 쪽 입력 집합을 읽으면서 lookup 한다.</p>
+
+      <div class="flow">SELECT *
+FROM A JOIN B ON A.id = B.id;
+
+1. A 집합을 PGA로 가져와 hash table 생성
+2. B 집합을 읽으면서 hash lookup</div>
+
+      <div class="warn">
+        <strong>중요:</strong> sort와 hash의 대상은 <strong>Buffer Cache에서 읽어온 결과 row 집합</strong>이다. 즉, 원본은 캐시에서 읽고, 계산은 PGA에서 한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · workload</div>
+      <h2>OLTP와 Batch는 왜 다르게 봐야 하는가</h2>
+
+      <h3>OLTP</h3>
+      <ul>
+        <li>짧고 빠른 트랜잭션</li>
+        <li>동시 사용자 많음</li>
+        <li>작은 쿼리, 인덱스 사용 많음</li>
+        <li>응답속도와 commit 빈도가 중요</li>
+      </ul>
+
+      <h3>Batch / DW</h3>
+      <ul>
+        <li>대량 데이터 처리</li>
+        <li>긴 실행 시간</li>
+        <li>Full Scan, Sort, Hash Join 많음</li>
+        <li>집계, 마이그레이션, 리포트성 작업이 많음</li>
+      </ul>
+
+      <div class="flow">OLTP  = 빠른 조회 / 짧은 트랜잭션 / SGA 중심
+Batch = 대량 처리 / 긴 작업 / PGA 중심</div>
+
+      <div class="point">
+        <strong>튜닝 방향이 달라진다:</strong> OLTP는 캐시 효율과 동시성 관리가 중요하고, Batch는 sort / hash / workarea를 버티는 PGA가 중요하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · Shared Pool</div>
+      <h2>하드파싱과 바인드 변수는 무엇인가</h2>
+
+      <h3>Hard Parsing</h3>
+      <p>SQL 실행 시, 문장을 새로 분석하고 syntax check를 하고, object lookup을 하고, 실행계획까지 새로 만드는 과정이다. CPU를 많이 쓴다.</p>
+
+      <div class="flow">Hard Parse
+1. SQL 문 분석
+2. 문법 검사
+3. Dictionary Cache에서 오브젝트 조회
+4. 실행계획 생성</div>
+
+      <h3>왜 문제가 되나</h3>
+      <p>문자열이 조금만 달라도 Oracle은 다른 SQL로 인식한다.</p>
+
+      <div class="flow">SELECT * FROM user WHERE id = 1;
+SELECT * FROM user WHERE id = 2;
+SELECT * FROM user WHERE id = 3;</div>
+
+      <p>이런 식이면 SQL 구조는 같아도 문자열이 달라서 매번 hard parsing이 발생할 수 있다.</p>
+
+      <h3>Bind Variable</h3>
+      <p>값 부분을 변수로 바꿔 SQL 구조를 동일하게 유지하는 방식이다.</p>
+
+      <div class="flow">SELECT * FROM user WHERE id = :id;</div>
+
+      <p>이렇게 하면 SQL 구조가 같으므로 실행계획 재사용이 쉬워지고, hard parsing을 줄일 수 있다.</p>
+
+      <div class="warn">
+        <strong>핵심:</strong> 하드파싱이 많아지면 CPU를 소모하고 Shared Pool을 흔든다. <strong>바인드 변수는 Shared Pool을 보호하는 가장 기본적인 습관</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · PGA 위험성</div>
+      <h2>PGA가 배치 / 병렬에서 왜 위험해지는가</h2>
+
+      <p>PGA는 프로세스 전용이므로, 작업이 커질수록 그리고 프로세스 수가 늘어날수록 메모리 사용량이 선형적으로 커질 수 있다.</p>
+
+      <div class="flow">서버 프로세스 1개 → PGA 1개</div>
+
+      <h3>배치에서 위험한 이유</h3>
+      <ul>
+        <li>Full Scan 많음</li>
+        <li>대량 Sort 많음</li>
+        <li>Hash Join 많음</li>
+      </ul>
+      <p>즉, 한 쿼리 자체가 큰 workarea를 요구한다.</p>
+
+      <div class="flow">예시
+1개 배치 쿼리 = PGA 500MB 사용 가능</div>
+
+      <h3>병렬에서 위험한 이유</h3>
+      <p>병렬 실행을 하면 worker process가 여러 개 뜨고, 각 worker마다 PGA가 필요하다.</p>
+
+      <div class="flow">parallel 8
+→ worker process 8개
+→ PGA 8개
+
+1 worker = 500MB
+→ 총 4GB</div>
+
+      <h3>동시 실행까지 겹치면</h3>
+      <div class="flow">동시에 10개 배치 쿼리 실행
+→ 4GB × 10 = 40GB</div>
+
+      <p>이렇게 되면 PGA가 OS 메모리까지 압박하고, swap이나 시스템 불안정으로 이어질 수 있다.</p>
+
+      <div class="point">
+        <strong>왜 pga_aggregate_target / pga_aggregate_limit가 중요하냐:</strong> PGA는 공유 메모리가 아니라 프로세스별로 자라기 때문에, 방치하면 <strong>uncontrolled growth</strong>가 발생한다.
+      </div>
+
+      <div class="warn">
+        <strong>실무에서 특히 위험한 조합:</strong> <strong>Batch + Parallel + Bind Variable 없음</strong><br />
+        결과적으로 PGA 폭증, CPU 폭증, Shared Pool 오염이 한 번에 올 수 있다.
+      </div>
+
+      <p class="muted">참고: sort가 PGA를 넘어서면 TEMP로 spill되는 구조는 TEMP 관련 페이지를 다룰 때 다시 자세히 설명한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">3단계 · 전체 흐름 연결</div>
+      <h2>13~18페이지와 추가 질문까지 하나의 실행 흐름으로 묶기</h2>
+
+      <div class="flow">사용자 요청
+  ↓
+서버 프로세스
+  ↓
+PGA에서 sort / hash / 세션 상태 처리
+  ↓
+SGA 접근
+  ├─ Library Cache에서 SQL / 실행계획 확인
+  ├─ Dictionary Cache에서 메타정보 확인
+  ├─ Buffer Cache에서 블록 조회 / 수정
+  └─ Redo Buffer에 변경 이력 기록
+  ↓
+LGWR가 Redo Log File에 기록
+  ↓
+DBWR가 나중에 Datafile 반영
+  ↓
+장애 나면 SMON이 checkpoint 이후 redo로 roll forward
+  ↓
+commit 안 된 것은 undo로 rollback</div>
+
+      <div class="point">
+        <strong>즉:</strong> 13~18페이지는 단순 메모리 소개가 아니라, <strong>SQL 실행 → 캐시 사용 → 계산 → 로그 기록 → 복구 가능성 확보</strong>까지 한 번에 설명하는 구간이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 실무 포인트</div>
+      <h2>실제로 장애 / 성능 문제로 어떻게 이어지는가</h2>
+
+      <h3>1. Buffer Cache 부족</h3>
+      <ul>
+        <li>physical read 증가</li>
+        <li>자주 읽는 블록이 빨리 밀려남</li>
+        <li>I/O wait 증가</li>
+      </ul>
+
+      <h3>2. Dirty Buffer 과다</h3>
+      <ul>
+        <li>변경은 많은데 DBWR가 못 따라갈 수 있음</li>
+        <li>free buffer 부족</li>
+        <li>새 블록을 읽어올 공간 부족</li>
+      </ul>
+
+      <h3>3. Redo 병목</h3>
+      <ul>
+        <li>commit 지연</li>
+        <li>log file sync 대기</li>
+        <li>redo log file I/O 병목</li>
+      </ul>
+
+      <h3>4. Shared Pool 문제</h3>
+      <ul>
+        <li>하드파싱 증가</li>
+        <li>CPU 사용량 증가</li>
+        <li>library cache contention 증가</li>
+      </ul>
+
+      <h3>5. PGA 문제</h3>
+      <ul>
+        <li>대형 sort / hash 작업</li>
+        <li>배치 workload</li>
+        <li>병렬 처리 시 worker 수만큼 PGA 증가</li>
+      </ul>
+
+      <div class="warn">
+        <strong>운영 감각으로 요약하면:</strong><br />
+        하드파싱은 CPU를 죽이고,<br />
+        Buffer Cache 부족은 I/O를 키우고,<br />
+        PGA 폭증은 메모리와 OS를 흔든다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">5단계 · 핵심 요약</div>
+      <h2>이번 범위 전체 요약</h2>
+      <div class="summary">13~18페이지는 Oracle 메모리 구조의 본체다.
+
+SGA는 공유 캐시이고,
+PGA는 프로세스별 작업 공간이다.
+
+Buffer Cache는 데이터 작업장,
+Redo Buffer는 복구를 위한 변경 이력 저장소,
+Shared Pool은 SQL과 메타정보 재사용 공간이다.
+
+정렬과 해시는 Buffer Cache에서 읽어온 결과 집합을
+PGA에서 계산하는 작업이다.
+
+OLTP는 SGA 중심,
+Batch는 PGA 중심으로 본다.
+
+하드파싱은 Shared Pool과 CPU를 흔들고,
+배치와 병렬은 PGA를 폭증시킬 수 있다.
+
+Oracle은
+“공유할 것은 SGA에,
+개별 작업은 PGA에,
+데이터는 Buffer Cache에서 처리하고,
+정합성은 Redo로 보장한다”
+라는 철학으로 움직인다.</div>
+    </section>
+  </div>
+</body>
+</html>
