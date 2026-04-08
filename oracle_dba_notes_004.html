@@ -1,0 +1,719 @@
+<!-- oracle_dba_notes_003.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 003</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.86);
+    }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    p { margin: 10px 0; }
+    ul {
+      margin: 10px 0;
+      padding-left: 22px;
+    }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 003</h1>
+      <p>범위: PDF 19~25페이지 + 이 범위에서 추가로 정리한 checkpoint / file header / DBWR / LGWR / commit 병목 / 지속가능한 최적화 / 정합성 / 데이터 손실 방어</p>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">← 메인 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">1단계 · 페이지 매칭</div>
+      <h2>19~25페이지가 전체 구조에서 차지하는 위치</h2>
+      <p>이 범위는 앞에서 본 메모리 구조를 실제로 움직이는 <strong>프로세스 협업 구간</strong>이다. 9~18페이지가 구조 설명이었다면, 19~25페이지는 <strong>누가 언제 기록하고, 누가 나중에 내리고, 장애 나면 누가 복구하는가</strong>를 설명한다.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>직접 등장하는 개념</h3>
+          <ul>
+            <li>User Process / Server Process / Background Process</li>
+            <li>PMON</li>
+            <li>SMON</li>
+            <li>DBWR</li>
+            <li>LGWR</li>
+            <li>CKPT</li>
+            <li>Instance Recovery</li>
+            <li>Fast Commit</li>
+            <li>Checkpoint</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>앞 범위와 연결되는 개념</h3>
+          <ul>
+            <li>SGA / PGA</li>
+            <li>Data Buffer Cache</li>
+            <li>Redo Log Buffer</li>
+            <li>WAL</li>
+            <li>Roll Forward / Roll Back</li>
+            <li>undo 역할</li>
+            <li>startup / recovery 흐름</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="point">
+        <strong>핵심 포인트:</strong> 이 범위는 Oracle의 백그라운드 프로세스가 어떻게 역할을 나눠서 <strong>실행, 기록, 지연쓰기, 기준점 관리, 복구, 자원 정리</strong>를 분담하는지 보여준다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 프로세스 구조</div>
+      <h2>User / Server / Background Process는 어떻게 역할이 갈리나</h2>
+
+      <h3>User Process</h3>
+      <p>클라이언트 쪽에서 움직이는 프로세스다. 예를 들어 사용자 PC의 SQL*Plus, SQL Developer, WAS 서버 쪽 DB 연결 세션 등이 여기에 해당한다. 즉, <strong>요청을 보내는 쪽</strong>이다.</p>
+
+      <h3>Server Process</h3>
+      <p>DB 서버 쪽에서 사용자 요청을 실제로 처리하는 프로세스다.</p>
+      <ul>
+        <li>SQL 파싱</li>
+        <li>최적화</li>
+        <li>커서 오픈</li>
+        <li>SQL 실행</li>
+        <li>블록 읽기</li>
+        <li>필요 시 정렬</li>
+        <li>최종 결과 반환</li>
+      </ul>
+      <p>즉, <strong>User Process와 SGA 사이에서 SQL 실행을 담당하는 실무자</strong>다.</p>
+
+      <h3>Background Process</h3>
+      <p>DBMS 운영 자체를 책임지는 프로세스다. 필수 백그라운드 프로세스는 PMON, SMON, DBWR, LGWR, CKPT다. 즉, 서버 프로세스가 요청을 처리한다면, 백그라운드 프로세스는 <strong>정리, 기록, 복구, 동기화</strong>를 담당한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 자원 정리</div>
+      <h2>PMON: 죽은 세션 뒤처리 담당</h2>
+      <p>PMON은 좀비 서버 프로세스를 제거하고, 그 프로세스가 쓰던 PGA 같은 자원을 회수한다. 사용자가 작업 중 비정상 종료되거나 네트워크가 끊기거나 서버 프로세스가 죽었을 때, 그 세션이 잡고 있던 자원을 깔끔하게 정리해야 시스템이 오염되지 않는다.</p>
+
+      <div class="point">
+        <strong>실무 의미:</strong> 운영 중 세션은 정상 종료만 하지 않는다. 끊긴 세션, 죽은 프로세스, 반쯤 끝난 작업이 자주 생긴다. PMON은 그런 쓰레기 자원을 치워서 시스템을 정상 상태로 되돌리는 역할이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 인스턴스 복구</div>
+      <h2>SMON: 죽은 인스턴스를 redo와 undo로 되살린다</h2>
+      <p>SMON의 핵심 역할은 instance recovery다. Oracle은 datafile에 바로 쓰지 않고 redo를 먼저 남기고 dirty buffer는 나중에 datafile에 내리기 때문에, 인스턴스가 갑자기 죽으면 메모리는 사라지고 datafile에는 일부만 반영되어 있을 수 있다. 이 상태를 일관되게 되살리는 것이 SMON이다.</p>
+
+      <h3>Roll Forward</h3>
+      <p>마지막 checkpoint 이후 redo를 읽어 최근까지 다시 적용한다. 즉, 메모리에만 있었고 파일에는 아직 안 내려간 변경을 redo로 다시 밀어 넣는다.</p>
+
+      <h3>Roll Back</h3>
+      <p>그중 commit되지 않은 작업은 undo를 이용해 제거한다. 즉, redo로 재생한 뒤 완료되지 않은 트랜잭션만 되돌린다.</p>
+
+      <h3>CKPT 발행</h3>
+      <p>복구가 끝나면 새로운 기준점을 만든다.</p>
+
+      <div class="flow">SMON = 인스턴스 장애 후
+redo로 다시 밀어 넣고(roll forward),
+commit 안 된 것은 undo로 제거하는(roll back)
+복구 담당 프로세스</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 지연쓰기</div>
+      <h2>DBWR: dirty buffer를 datafile로 내리는 프로세스</h2>
+      <p>DBWR는 DB Buffer Cache의 내용을 Datafile로 내리는 프로세스다. Oracle은 변경을 버퍼 캐시에 먼저 반영하고, dirty buffer를 나중에 datafile에 쓴다. 이 지연쓰기 구조 덕분에 commit이 빠르다.</p>
+
+      <h3>왜 DBWR가 필요한가</h3>
+      <ul>
+        <li>dirty buffer를 언젠가 디스크에 내려야 한다.</li>
+        <li>free buffer를 확보해야 한다.</li>
+        <li>checkpoint 기준을 맞춰야 한다.</li>
+      </ul>
+
+      <div class="point">
+        <strong>Deferred Write / Fast Commit의 연결:</strong> commit 시점에 datafile을 바로 쓰지 않고, dirty buffer는 나중에 DBWR가 처리한다. 그래서 commit이 빠르다.
+      </div>
+
+      <h3>DBWR 기동 요건</h3>
+      <ul>
+        <li>주기적 timeout</li>
+        <li>checkpoint 발생</li>
+        <li>dirty buffer 임계치 초과</li>
+        <li>free buffer 부족</li>
+        <li>direct path read 직전</li>
+        <li>tablespace 상태 변경</li>
+        <li>backup, truncate, drop 등</li>
+      </ul>
+
+      <div class="warn">
+        <strong>실무 해석:</strong> DBWR는 단순히 “주기적으로 쓰는 프로세스”가 아니다. <strong>동기화 필요, 공간 확보 필요, dirty pressure 해소</strong>라는 세 가지 관점에서 움직인다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 정합성 보장</div>
+      <h2>LGWR: redo를 먼저 디스크에 밀어 넣는 프로세스</h2>
+      <p>LGWR는 서버 프로세스가 redo log buffer에 기록한 내용을 redo log file에 쓰는 역할을 한다. Oracle에서 데이터 정합성은 datafile보다 <strong>redo 경로</strong>가 먼저 지킨다.</p>
+
+      <div class="point">
+        <strong>핵심:</strong> commit 순간 가장 중요한 백그라운드 프로세스는 DBWR가 아니라 <strong>LGWR</strong>다.
+      </div>
+
+      <h3>LGWR 기동 요건</h3>
+      <ul>
+        <li>매 3초</li>
+        <li>redo log buffer 1/3 이상</li>
+        <li>1MB 초과</li>
+        <li>DBWR 직전</li>
+        <li>commit 발생</li>
+      </ul>
+
+      <div class="flow">DBWR보다 LGWR가 논리적으로 먼저여야
+장애 시 복구 가능성이 보장된다</div>
+
+      <p>datafile에 먼저 쓰고 redo가 없으면 장애 시 복구 근거가 사라진다. 그래서 WAL 구조에서는 redo가 반드시 선행한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 기준점 관리</div>
+      <h2>CKPT: recovery 기준점을 남기는 관리자</h2>
+      <p>Checkpoint는 단순 저장 이벤트가 아니라, <strong>어디까지 file 반영이 되었는지와 장애 시 어디서부터 recovery를 시작할지</strong>를 알려주는 기준점이다.</p>
+
+      <ul>
+        <li>메모리와 file 간 동기화 시점 보장</li>
+        <li>DBWR에게 기동 신호 전달</li>
+        <li>SCN, RBA 저장</li>
+        <li>instance recovery 시 roll forward 시작 위치 지정</li>
+        <li>control file header와 data file header에 checkpoint 정보 기록</li>
+      </ul>
+
+      <h3>SCN과 RBA</h3>
+      <div class="flow">SCN = 논리적 시점
+RBA = redo log 안의 물리적 위치</div>
+
+      <p>SCN은 시간축 같은 논리 기준이고, RBA는 redo 파일 안에서 어디부터 읽을지 알려주는 물리 주소다.</p>
+
+      <h3>“현재 파일 상태가 어디까지 반영됐는지”의 의미</h3>
+      <p>여기서 주로 말하는 파일은 <strong>datafile 쪽 상태</strong>다. checkpoint의 목적은 redo가 어디까지 발생했는지가 아니라, <strong>그 redo 중 어느 시점까지 datafile이 따라왔는지</strong>를 표시하는 것이다.</p>
+
+      <div class="flow">현재 datafile이
+redo의 어느 시점까지 반영된 상태인가</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 파일 구조</div>
+      <h2>checkpoint 정보는 왜 control file header와 data file header에 둘 다 기록하나</h2>
+
+      <h3>Control file</h3>
+      <p>DB 전체 구조를 기억하는 중앙 장부다.</p>
+      <ul>
+        <li>database 이름</li>
+        <li>datafile / redo log file 정보</li>
+        <li>checkpoint 관련 정보</li>
+        <li>recovery에 필요한 메타정보</li>
+      </ul>
+
+      <h3>Data file header</h3>
+      <p>각 datafile 맨 앞부분의 관리 영역이다. 각 datafile 자신이 어디까지 반영된 상태인지 알려주는 자기 상태표시가 들어 있다.</p>
+
+      <div class="flow">control file = 중앙 통제본
+data file header = 각 파일의 자기 상태표시</div>
+
+      <p>Oracle은 중앙 관리 장부와 개별 파일의 자기 상태표시를 함께 남겨야 startup / recovery 시 전체 상태와 각 파일 상태를 비교하면서 판단할 수 있다.</p>
+
+      <h3>항상 고정되어 있나</h3>
+      <p>checkpoint 정보를 기록하는 <strong>대상 종류</strong>는 고정적이다. 즉, control file header와 data file header에 기록한다는 구조는 고정이다. 하지만 control file 개수, datafile 개수, 실제 경로는 운영 중 바뀔 수 있다.</p>
+
+      <div class="point">
+        <strong>정리:</strong> <strong>어떤 종류의 파일에 기록할지는 고정</strong>이고, 그 파일들의 실제 개수와 경로는 운영 환경에 따라 달라질 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · DBA 시각</div>
+      <h2>DBWR와 LGWR 동작 시점을 DBA가 왜 알아야 하나</h2>
+      <p>평소에 DBWR / LGWR를 직접 제어한다기보다, <strong>문제가 생겼을 때 원인을 해석하는 데 핵심</strong>이 된다.</p>
+
+      <h3>장애 분석</h3>
+      <ul>
+        <li>commit이 느리다 → LGWR / redo 경로 의심</li>
+        <li>free buffer waits → DBWR / dirty buffer pressure 의심</li>
+        <li>recovery가 길다 → checkpoint / redo 범위 의심</li>
+      </ul>
+
+      <h3>성능 분석</h3>
+      <ul>
+        <li>log file sync</li>
+        <li>free buffer waits</li>
+        <li>checkpoint not complete</li>
+      </ul>
+      <p>이런 증상을 읽을 때 DBWR / LGWR / CKPT의 동작 원리를 알아야 한다.</p>
+
+      <h3>운영 판단</h3>
+      <ul>
+        <li>redo 로그 크기 조정</li>
+        <li>I/O 분산</li>
+        <li>commit 패턴 개선</li>
+        <li>배치 시간 조정</li>
+      </ul>
+
+      <div class="warn">
+        <strong>실무 감각:</strong> DBWR / LGWR 시점을 “직접 조작하는 일”보다, <strong>wait event와 증상을 보고 병목 위치를 해석하는 일</strong>이 훨씬 흔하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 다중 변경과 commit</div>
+      <h2>같은 데이터에 짧은 시간 동안 여러 조작과 commit이 몰리면</h2>
+      <p>Oracle은 WAL 구조 덕분에 DBWR가 datafile에 늦게 써도 <strong>정합성 자체는 redo가 지켜준다</strong>. 잠재적 위험은 데이터 손상 그 자체보다 <strong>성능 병목, commit 지연, recovery 범위 증가, 경합</strong> 쪽에 있다.</p>
+
+      <h3>내부 흐름</h3>
+      <div class="flow">같은 데이터에 대해 짧은 시간 동안 여러 변경 발생
+  ↓
+서버 프로세스가 redo를 계속 생성
+  ↓
+LGWR가 commit 시 redo를 디스크에 먼저 기록
+  ↓
+Buffer Cache의 블록은 계속 최신 상태로 갱신
+  ↓
+DBWR는 나중에 dirty block을 datafile에 반영
+  ↓
+CKPT는 현재 datafile이 redo의 어디까지 따라왔는지 기록
+  ↓
+장애 나면 SMON이 checkpoint 이후 redo부터 recovery 수행</div>
+
+      <h3>중요한 사실</h3>
+      <p>datafile은 중간의 모든 순간을 다 저장할 필요가 없다. redo가 그 사이의 변경 이력을 보존하기 때문이다.</p>
+
+      <h3>잠재적 위험</h3>
+      <ul>
+        <li><strong>log file sync 증가</strong> — commit이 많아져 LGWR가 자주 깨어남</li>
+        <li><strong>redo 폭증</strong> — redo 발생량 증가, 로그 스위치와 archive 부담 증가</li>
+        <li><strong>dirty buffer pressure</strong> — dirty buffer가 쌓여 free buffer 부족</li>
+        <li><strong>recovery 범위 증가</strong> — checkpoint 기준 이후 redo 재적용 범위 증가</li>
+        <li><strong>같은 데이터 경합</strong> — row lock contention, hot block, buffer busy waits</li>
+      </ul>
+
+      <div class="warn">
+        <strong>핵심:</strong> DBWR가 아직 안 썼는데 commit이 됐다는 건 Oracle에서는 정상이다. <strong>commit = redo 보장</strong>, <strong>datafile 반영 = 나중</strong> 구조이기 때문이다.
+      </div>
+
+      <h3>예방 방향</h3>
+      <ul>
+        <li>commit을 너무 잘게 쪼개지 않기</li>
+        <li>redo 경로 I/O를 빠르고 안정적으로 만들기</li>
+        <li>dirty buffer pressure를 줄이기</li>
+        <li>hot block / 경합 구조 완화</li>
+        <li>checkpoint / recovery 범위까지 함께 보기</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 운영 철학</div>
+      <h2>병목 해소와 무조건적 자원 확대가 아닌, 지속가능한 최적화</h2>
+      <p>좋은 DB 운영은 단순히 자원을 많이 주는 것이 아니라, <strong>제한된 자원 안에서 병목을 해소하고, 정합성과 복구 가능성을 지키는 것</strong>이다.</p>
+
+      <div class="flow">1. 병목 해소 (Performance)
+2. 제한된 자원 내 최적화 (Efficiency)
+3. 데이터 정합성 + 손실 방어 (Reliability)</div>
+
+      <h3>왜 무조건 자원 늘리기가 답이 아닌가</h3>
+      <p>문제의 상당수는 자원 부족보다 구조 문제에서 온다.</p>
+      <ul>
+        <li>commit 남발 → LGWR 병목</li>
+        <li>hot block → 동시성 문제</li>
+        <li>full scan → SQL 문제</li>
+        <li>batch 시간 겹침 → 운영 문제</li>
+      </ul>
+
+      <div class="point">
+        <strong>핵심 방향:</strong> “느리다 → 메모리 늘리자”가 아니라, <strong>제한된 자원 안에서 병목을 제거</strong>해야 한다.
+      </div>
+
+      <h3>병목 해소의 기본 전략</h3>
+      <div class="flow">1. 병목 위치를 찾는다
+2. 병목을 이동시킨다
+3. 병목을 분산시킨다</div>
+
+      <p>병목은 제거하는 것보다 다른 곳으로 이동시키는 경우가 많다. 그래서 DBA는 항상 균형을 본다.</p>
+
+      <h3>지속가능한 최적화</h3>
+      <ul>
+        <li>peak 시간, batch 시간, commit 패턴 같은 부하 예측</li>
+        <li>PGA limit, parallel 제한, session 수 제한 같은 상한 설정</li>
+        <li>OLTP vs Batch 분리, Redo vs Datafile 분리, Temp 분리 같은 격리</li>
+        <li>queue, retry, rate limit 같은 완충 장치</li>
+      </ul>
+
+      <div class="warn">
+        <strong>운영 철학:</strong> 목표는 “지금 빠른 시스템”이 아니라 <strong>계속 버티는 시스템</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 요즘 환경과 보편 전략</div>
+      <h2>유명하고 보편적인 세팅이 있나</h2>
+      <p>정답 세팅은 없다. 대신 <strong>workload 기반의 보편적 전략</strong>은 있다.</p>
+
+      <h3>DBA가 실제로 먼저 보는 4가지 축</h3>
+      <div class="flow">1. workload (OLTP vs Batch)
+2. 동시 사용자 수
+3. 트랜잭션 패턴 (commit 빈도)
+4. I/O 성능</div>
+
+      <h3>요즘 시대의 방향</h3>
+      <div class="flow">과거: 디스크를 아껴라
+현재: I/O 병목과 동시성 문제를 줄여라</div>
+
+      <p>SSD / NVMe 시대에는 저장공간 자체보다 redo latency, random I/O, cache 효율, 동시성이 더 중요하다.</p>
+
+      <div class="point">
+        <strong>실무 우선순위:</strong> <strong>용량 &lt; 성능 &lt; 안정성(정합성)</strong>
+      </div>
+
+      <h3>보편적인 전략 예시</h3>
+      <ul>
+        <li><strong>redo log</strong>: 너무 작으면 log switch 폭증, 너무 크면 recovery 부담 증가 → 보통 switch가 10~20분 간격이 되도록 조정</li>
+        <li><strong>commit 패턴</strong>: 너무 자주 하면 LGWR 병목, 너무 늦게 하면 undo / lock 증가</li>
+        <li><strong>SGA vs PGA</strong>: OLTP는 SGA 중심, Batch는 PGA 중심</li>
+        <li><strong>I/O 분리</strong>: redo, datafile, temp, archive를 분리해서 서로 영향 줄이기</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 빈번한 병목</div>
+      <h2>실무에서 가장 자주 신경 써야 하는 속도 저하 이슈</h2>
+      <p>“가장 많고 가장 신경 써야 하는 것”을 현실적인 우선순위로 정리하면 다음과 같다.</p>
+
+      <h3>1위: log file sync (commit 병목)</h3>
+      <ul>
+        <li>commit 너무 자주</li>
+        <li>redo 디스크 느림</li>
+        <li>LGWR latency</li>
+      </ul>
+      <p>사용자 체감은 “저장 버튼 누르면 느림”, “API 응답이 끊김”이다.</p>
+
+      <h3>2위: 동시성 경합 (hot block / row lock)</h3>
+      <ul>
+        <li>같은 데이터 계속 update</li>
+        <li>sequence / index hotspot</li>
+        <li>특정 row 집중</li>
+      </ul>
+      <p>CPU가 낮아도 특정 기능만 느린 식으로 드러날 수 있다.</p>
+
+      <h3>3위: Buffer Cache 부족</h3>
+      <ul>
+        <li>SGA가 작음</li>
+        <li>full scan 많음</li>
+        <li>캐시 적중률이 낮음</li>
+      </ul>
+      <p>physical read 증가와 I/O 지연으로 이어진다.</p>
+
+      <h3>4위: PGA 폭발 (batch / parallel)</h3>
+      <ul>
+        <li>sort 많음</li>
+        <li>hash join 많음</li>
+        <li>parallel 실행</li>
+      </ul>
+
+      <h3>5위: dirty buffer pressure → free buffer waits</h3>
+      <ul>
+        <li>update 많음</li>
+        <li>DBWR 느림</li>
+        <li>write I/O 병목</li>
+      </ul>
+
+      <h3>6위: checkpoint 문제</h3>
+      <ul>
+        <li>checkpoint 너무 드묾</li>
+        <li>redo 많음</li>
+      </ul>
+      <p>restart recovery 시간 증가, I/O burst와 연결된다.</p>
+
+      <div class="warn">
+        <strong>실무 감각:</strong> 가장 흔한 병목은 보통 <strong>commit → LGWR</strong>, <strong>동시성 경합</strong>, <strong>I/O 부족</strong> 쪽에서 먼저 체감된다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 데이터 손실 방어</div>
+      <h2>정합성 유지와 데이터 손실 방어</h2>
+      <p>Oracle의 기본 철학은 <strong>redo가 살아 있으면 데이터는 복구 가능하다</strong>는 것이다.</p>
+
+      <div class="flow">Redo Log → 반드시 먼저 기록 (WAL)
+Archive Log → 백업 / 이후 복구 근거
+Checkpoint → 기준점
+Undo → rollback / consistent read</div>
+
+      <h3>위험 케이스 해석</h3>
+      <ul>
+        <li><strong>redo 손실</strong> → 복구 불가 가능성</li>
+        <li><strong>commit 전에 crash</strong> → redo가 보장되지 않았으므로 반영 안 됨</li>
+        <li><strong>commit 후 datafile 미반영</strong> → redo로 복구 가능</li>
+      </ul>
+
+      <div class="point">
+        <strong>핵심 문장:</strong> <strong>정합성은 datafile이 아니라 redo가 지킨다.</strong>
+      </div>
+
+      <h3>읽기 정합성</h3>
+      <div class="flow">SELECT → consistent read (undo 사용)
+UPDATE → current read</div>
+
+      <p>읽는 동안 데이터가 바뀌어도 일관된 결과를 보장해야 하므로, Oracle은 undo와 SCN 기반으로 consistent read를 제공한다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">3단계 · 전체 흐름 연결</div>
+      <h2>19~25페이지와 추가 질문까지 하나의 운영 흐름으로 묶기</h2>
+
+      <div class="flow">User Process
+  ↓
+Server Process
+  ├─ SQL 파싱 / 최적화 / 실행
+  ├─ Buffer Cache에서 블록 읽기 / 수정
+  └─ Redo Log Buffer에 변경 이력 기록
+  ↓
+LGWR
+  └─ Redo Log File에 먼저 기록
+  ↓
+DBWR
+  └─ Dirty Buffer를 나중에 Datafile에 기록
+  ↓
+CKPT
+  └─ 어느 시점까지 동기화됐는지 SCN / RBA 기준 기록
+  ↓
+장애 발생 시
+SMON
+  ├─ Checkpoint 이후 redo로 roll forward
+  └─ commit 안 된 작업은 undo로 rollback
+  ↓
+비정상 종료 세션 정리는 PMON
+
+운영 관점 추가
+  ↓
+commit 많다 → LGWR 병목
+update 많다 → dirty buffer pressure
+같은 데이터 집중 → hot block / lock
+redo 많다 → checkpoint / recovery 부담 증가
+  ↓
+DBA는
+병목 해소 + 자원 상한 관리 + 정합성 유지
+를 동시에 고려한다</div>
+
+      <div class="point">
+        <strong>즉:</strong> Oracle은 <strong>실행, 기록, 지연쓰기, 기준점 관리, 복구, 자원 정리</strong>를 프로세스별로 나눠서 운영하고, DBA는 그 전체 흐름이 무너지지 않게 균형을 잡는 사람이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · 실무 포인트</div>
+      <h2>이 범위에서 실제 장애 / 성능 문제로 어떻게 이어지는가</h2>
+
+      <h3>1. commit 지연</h3>
+      <ul>
+        <li>LGWR / redo I/O / log file sync 경로를 먼저 본다.</li>
+      </ul>
+
+      <h3>2. free buffer waits</h3>
+      <ul>
+        <li>dirty buffer pressure와 DBWR 처리 속도를 의심한다.</li>
+      </ul>
+
+      <h3>3. recovery 시간 증가</h3>
+      <ul>
+        <li>checkpoint 기준과 redo 범위를 함께 본다.</li>
+      </ul>
+
+      <h3>4. 같은 데이터 집중 업데이트</h3>
+      <ul>
+        <li>row lock contention, hot block, buffer busy waits를 의심한다.</li>
+      </ul>
+
+      <h3>5. 자원 무제한 사용</h3>
+      <ul>
+        <li>PGA 무제한 → 메모리 폭발</li>
+        <li>세션 무제한 → CPU / context switching 폭증</li>
+        <li>commit 남발 → LGWR 병목</li>
+      </ul>
+
+      <div class="warn">
+        <strong>가장 중요한 운영 철학:</strong> 좋은 DB는 “빠른 DB”가 아니라 <strong>무너지지 않는 DB</strong>다. 성능 때문에 정합성이 깨지면 끝이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">5단계 · 핵심 요약</div>
+      <h2>이번 범위 전체 요약</h2>
+      <div class="summary">19~25페이지는 Oracle의 운영 프로세스 협업 구간이다.
+
+Server Process가 SQL을 실행하고,
+LGWR가 redo를 먼저 디스크에 남기고,
+DBWR가 dirty buffer를 나중에 datafile에 내리며,
+CKPT가 recovery 기준점을 기록하고,
+장애가 나면 SMON이 redo / undo로 instance recovery를 수행하고,
+죽은 세션 뒤처리는 PMON이 맡는다.
+
+checkpoint는 redo 자체의 상태를 기록하는 것이라기보다,
+datafile이 redo의 어느 시점까지 반영됐는지를 나타내는 기준점이다.
+
+RBA는 redo log 안의 물리적 위치이고,
+SCN은 논리적 시점이다.
+
+checkpoint 정보는 control file header와 data file header에 기록되며,
+이 구조 덕분에 startup / recovery 때 Oracle이 어디서부터 복구할지 판단할 수 있다.
+
+DBWR와 LGWR 타이밍은 평소 직접 제어 대상이라기보다
+장애 분석과 성능 병목 해석의 핵심 지식이다.
+
+같은 데이터에 짧은 시간 동안 여러 변경과 commit이 몰리면
+정합성 자체는 redo가 지켜주지만,
+LGWR 병목, redo 폭증, dirty buffer pressure,
+recovery 범위 증가, hot block 경합이 위험해진다.
+
+정해진 최적 세팅은 없다.
+대신 workload 기반으로 균형을 맞춘다.
+
+요즘은 저장공간 자체보다
+redo latency, random I/O, 동시성이 더 중요하다.
+
+가장 흔한 병목은
+1) commit → LGWR
+2) 동시성 경합
+3) I/O 부족
+쪽에서 먼저 나타난다.
+
+좋은 DB는 단순히 빠른 DB가 아니라,
+병목을 통제하고 자원 상한을 두고
+정합성과 복구 가능성을 지키는 DB다.</div>
+    </section>
+  </div>
+</body>
+</html>

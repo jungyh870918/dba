@@ -1,0 +1,478 @@
+<!-- oracle_dba_notes_005.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 005</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.86);
+    }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    p { margin: 10px 0; }
+    ul {
+      margin: 10px 0;
+      padding-left: 22px;
+    }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 005</h1>
+      <p>Undo 심화 정리 · SCN / Undo Chain / Consistent Read / ORA-01555를 논리 순서대로 정리</p>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">← 메인 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">핵심 목표</div>
+      <h2>Undo를 “rollback 공간”이 아니라 “시간을 되돌리는 메커니즘”으로 이해하기</h2>
+      <p>Undo를 제대로 이해하려면 다음 순서가 머릿속에 잡혀야 한다.</p>
+      <div class="flow">왜 undo가 필요한가
+→ undo는 정확히 무엇인가
+→ redo와 뭐가 다른가
+→ UPDATE 때 undo가 어떻게 생기나
+→ SELECT 때 undo가 어떻게 쓰이나
+→ SCN과 undo는 어떻게 연결되나
+→ consistent read가 어떻게 만들어지나
+→ undo chain은 무엇인가
+→ ORA-01555는 왜 발생하나
+→ DBA는 실무에서 무엇을 봐야 하나</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">1. 존재 이유</div>
+      <h2>왜 undo가 필요한가</h2>
+      <p>Oracle은 여러 세션이 동시에 읽고 쓰는 DB다. 어떤 세션은 데이터를 수정하고, 다른 세션은 동시에 그 데이터를 읽는다. 이때 조회 중간에 값이 계속 바뀌면 한 쿼리 안에서 과거와 현재가 섞인 결과가 나온다.</p>
+      <div class="point">
+        <strong>핵심:</strong> Oracle은 SELECT가 <strong>쿼리 시작 시점 기준으로 일관된 결과</strong>를 보도록 보장한다. 이 일관성을 만드는 핵심 구조가 undo다.
+      </div>
+      <div class="flow">undo의 가장 중요한 존재 이유
+= 읽기 일관성(consistent read) 보장</div>
+      <p>많은 사람들이 undo를 rollback 용도로만 기억하지만, 그건 절반만 맞다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2. 정의</div>
+      <h2>undo는 정확히 무엇인가</h2>
+      <p>Undo는 쉽게 말해 <strong>변경 이전 상태(before image)</strong>를 저장해두는 영역이다.</p>
+      <div class="flow">예:
+salary = 2000
+→ update
+salary = 3000
+
+undo에는
+salary = 2000
+즉 변경 전 값이 저장된다.</div>
+      <div class="point">
+        <strong>정리:</strong> Undo는 현재 데이터를 저장하는 공간이 아니라, <strong>변경되기 전 데이터</strong>를 저장하는 공간이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">3. redo와 차이</div>
+      <h2>undo와 redo는 전혀 다른 목적을 가진다</h2>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Redo</h3>
+          <ul>
+            <li>무슨 변경이 일어났는지 기록</li>
+            <li>장애 발생 시 복구용</li>
+            <li>정합성과 복구를 담당</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Undo</h3>
+          <ul>
+            <li>변경 이전 상태 저장</li>
+            <li>rollback</li>
+            <li>consistent read</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flow">Redo = 앞으로 다시 적용하기 위한 기록
+Undo = 뒤로 되돌리기 위한 기록</div>
+      <div class="point">
+        <strong>실무 한 줄:</strong> <strong>Redo는 복구용</strong>, <strong>Undo는 일관성 유지용</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4. UPDATE와 undo</div>
+      <h2>UPDATE가 일어날 때 undo는 어떻게 생성되나</h2>
+      <p>UPDATE는 단순히 현재 블록만 바꾸는 게 아니다. Oracle은 나중에 rollback 하거나, 다른 SELECT가 과거 상태를 읽을 수 있도록 before image를 먼저 준비한다.</p>
+      <div class="flow">1. 현재 block 읽음
+2. 변경 전 값 추출
+3. undo 생성
+4. Buffer Cache의 block 수정
+5. redo 기록
+6. COMMIT 시 LGWR가 redo flush
+7. DBWR는 나중에 datafile 반영</div>
+      <div class="point">
+        <strong>핵심:</strong> <strong>변경 전에 undo가 먼저 준비된다.</strong> 나중에 rollback 하거나, 다른 SELECT가 과거 상태를 필요로 할 수 있기 때문이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">5. SELECT와 undo</div>
+      <h2>SELECT에서는 undo가 어떻게 쓰이나</h2>
+      <p>SELECT는 redo를 읽지 않는다. SELECT는 항상 data block을 읽는다. 정확히는 먼저 Buffer Cache를 보고, 없으면 datafile에서 읽어 Buffer Cache에 올린다.</p>
+      <div class="warn">
+        <strong>중요한 오해 정리:</strong> SELECT가 읽는 것은 <strong>redo log buffer</strong>가 아니다. 항상 <strong>data block</strong>이다.
+      </div>
+      <p>문제는 그 block이 이미 다른 세션에 의해 수정된 최신 상태일 수 있다는 점이다. SELECT는 자기 쿼리가 시작된 시점의 상태를 봐야 하므로, 현재 block이 너무 최신이면 undo를 이용해 과거 상태를 재구성한다.</p>
+      <div class="flow">SELECT
+→ 현재 block 읽기
+→ 필요하면 undo 적용
+→ 과거 snapshot 재구성</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">6. SCN 연결</div>
+      <h2>SCN과 undo는 어떻게 연결되나</h2>
+      <p>SCN은 Oracle의 논리적 시간축이다. 쉽게 말하면 Oracle 내부의 시점 번호다.</p>
+
+      <h3>중요한 두 개의 SCN</h3>
+      <ul>
+        <li><strong>Query SCN</strong> : 내 쿼리가 시작된 시점</li>
+        <li><strong>Block SCN</strong> : 그 block이 마지막으로 변경된 시점</li>
+      </ul>
+
+      <h3>왜 SCN을 비교하나</h3>
+      <p>Oracle은 어떤 block을 읽었을 때, 그 block이 내가 읽어야 할 시점의 데이터인지 판별해야 한다.</p>
+
+      <div class="flow">Block SCN <= Query SCN
+→ 내가 보고 싶은 시점보다 과거거나 같은 시점
+→ 그대로 읽어도 됨
+
+Block SCN > Query SCN
+→ 내가 쿼리를 시작한 이후에 더 바뀐 미래 상태
+→ 그대로 읽으면 안 됨
+→ undo 이용해 과거 상태로 복원</div>
+
+      <div class="point">
+        <strong>핵심:</strong> SCN은 과거 데이터를 저장하지 않는다. SCN은 <strong>어디까지 되돌려야 하는지 판단하는 기준점</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">7. undo에 실제로 저장되는 것</div>
+      <h2>Undo에는 무엇이 들어 있나</h2>
+      <p>Undo에는 단순히 값 하나만 있는 게 아니다. 과거 상태를 재구성하려면 체인 구조가 필요하다.</p>
+      <div class="flow">Undo record에 들어가는 대표 요소
+1. 변경 전 값 (before image)
+2. 이전 undo 위치 (pointer)
+3. 트랜잭션 정보
+4. 관련 SCN 정보</div>
+      <p>즉 undo 하나는 <strong>이전 상태 + 이전 이력으로 연결되는 포인터</strong>를 함께 가진다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">8. undo chain</div>
+      <h2>Oracle은 과거를 저장하는 게 아니라, 필요할 때 되돌린다</h2>
+      <p>Oracle은 과거 버전 전체를 완성본으로 저장하지 않는다. 대신 현재 상태와 undo chain을 이용해 과거를 만들어낸다.</p>
+
+      <div class="flow">예:
+현재 값 = 400
+
+undo chain:
+400 직전 값 = 300
+300 직전 값 = 200
+200 직전 값 = 100</div>
+
+      <p>현재 block이 SCN 105 상태이고, SELECT가 SCN 100 시점을 보고 싶다면 Oracle은 undo를 역방향으로 따라가며 과거 상태를 복원한다.</p>
+
+      <div class="flow">현재 block
+ ↓
+undo 1
+ ↓
+undo 2
+ ↓
+undo 3
+ ↓
+필요한 시점까지 되돌림</div>
+
+      <div class="point">
+        <strong>정리:</strong> Oracle은 과거를 통째로 저장하는 것이 아니라, <strong>현재 + undo chain</strong>으로 필요할 때 과거를 만든다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">9. consistent read 실제 흐름</div>
+      <h2>Oracle은 어떻게 일관된 과거 snapshot을 만들까</h2>
+      <div class="flow">1. SELECT 시작
+2. Query SCN 확보
+3. block 읽기
+4. Block SCN 비교
+5. Block SCN이 더 크면 undo chain 따라감
+6. 필요한 시점까지 되돌림
+7. 일관된 결과 반환</div>
+      <div class="warn">
+        <strong>중요:</strong> Oracle은 항상 최신 block을 기준으로 보고, 필요할 때만 undo를 적용해 과거 버전을 만든다. 과거 버전을 따로 무한 보관하는 구조가 아니다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">10. commit 이후에도 undo가 남는 이유</div>
+      <h2>commit 후 rollback은 끝났는데 왜 undo를 바로 안 지우나</h2>
+      <p>Commit이 되었다고 해서 undo가 바로 사라지지 않는다. rollback 용도는 끝났더라도, 이미 시작된 SELECT가 그 과거 시점을 읽고 있을 수 있기 때문이다.</p>
+      <div class="point">
+        <strong>핵심:</strong> commit 후에도 undo는 한동안 남아 있다. 이유는 <strong>rollback보다 consistent read</strong> 때문이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">11. undo retention</div>
+      <h2>undo retention은 “무조건 보존 시간”이 아니라 “유지 목표”다</h2>
+      <p>undo retention은 undo를 얼마나 오래 유지하려는지에 대한 정책이다. 하지만 이 값이 있다고 해서 무조건 그 시간만큼 반드시 보존되는 건 아니다.</p>
+      <ul>
+        <li>undo tablespace 크기</li>
+        <li>DML 발생량</li>
+        <li>overwrite pressure</li>
+      </ul>
+      <p>실제 보존 가능 여부는 위 조건들에 달려 있다.</p>
+      <div class="warn">
+        <strong>중요한 오해 금지:</strong> <strong>undo retention을 늘리면 자동으로 다 해결되는 것이 아니다.</strong> overwrite pressure가 크면 체인은 더 빨리 끊길 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">12. ORA-01555</div>
+      <h2>snapshot too old의 정확한 의미</h2>
+      <p>ORA-01555는 단순히 “옛날 값이 없다”가 아니라, 필요한 시점까지 따라가야 할 undo chain 중간이 이미 덮어쓰기되어 <strong>복원 경로가 끊긴 상태</strong>다.</p>
+
+      <div class="flow">긴 SELECT 시작
+→ Query SCN 오래 유지
+→ 그 사이 다른 DML이 많이 발생
+→ undo가 계속 생성됨
+→ 예전 undo가 덮어쓰기됨
+→ SELECT가 과거를 복원하려고 undo chain을 따라감
+→ 중간 chain이 없어짐
+→ ORA-01555 발생</div>
+
+      <div class="point">
+        <strong>정확한 표현:</strong> ORA-01555는 단순한 “데이터 부족”이 아니라, <strong>과거 복원을 위한 undo chain 상실</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">13. 헷갈리기 쉬운 개념 정리</div>
+      <h2>까다로운 포인트를 한 번에 정리</h2>
+      <ul>
+        <li><strong>SELECT는 redo를 읽지 않는다.</strong> 항상 data block을 읽고, 필요하면 undo를 적용한다.</li>
+        <li><strong>undo는 현재 데이터를 담는 곳이 아니다.</strong> 변경 전 상태를 담는다.</li>
+        <li><strong>SCN은 데이터를 들고 있지 않다.</strong> 되돌릴 기준점이다.</li>
+        <li><strong>Oracle은 과거를 통째로 보관하지 않는다.</strong> 현재 상태와 undo chain으로 과거를 만든다.</li>
+        <li><strong>commit 후에도 undo는 남는다.</strong> 이미 시작된 SELECT를 위해 필요하기 때문이다.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="badge">14. 실무 연결</div>
+      <h2>DBA는 undo를 어떤 관점으로 봐야 하나</h2>
+
+      <div class="grid">
+        <div class="card">
+          <h3>봐야 할 것</h3>
+          <ul>
+            <li>읽기 일관성을 유지할 수 있는가</li>
+            <li>긴 조회를 버틸 수 있는가</li>
+            <li>대량 변경이 undo를 너무 빨리 밀어내지 않는가</li>
+            <li>batch와 조회가 서로를 망치지 않는가</li>
+            <li>snapshot too old 위험이 있는가</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>대표 위험</h3>
+          <ul>
+            <li>ORA-01555</li>
+            <li>긴 리포트와 대량 batch 충돌</li>
+            <li>undo retention만 믿는 잘못된 운영</li>
+            <li>undo tablespace 크기 과소</li>
+            <li>commit / DML 패턴 설계 실패</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flow">UPDATE 발생
+ ↓
+before image를 undo에 저장
+ ↓
+redo도 함께 기록
+ ↓
+commit 이후에도 undo는 일정 시간 유지
+ ↓
+SELECT가 과거 시점(Query SCN) 기준으로 읽으려 함
+ ↓
+현재 block이 너무 최신이면
+ ↓
+undo chain을 따라가며 과거 상태 복원
+ ↓
+필요한 시점까지 복원되면 consistent read 성공
+ ↓
+중간 undo가 이미 덮어쓰기되면 ORA-01555 발생</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">최종 요약</div>
+      <h2>Undo 전체를 한 문장으로 묶으면</h2>
+      <div class="summary">Undo는 변경 전 값을 저장하는 구조다.
+
+핵심 목적은 rollback도 맞지만,
+더 본질적으로는 consistent read, 즉 읽기 일관성 보장이다.
+
+SELECT는 현재 block을 읽고,
+그 block이 Query SCN보다 미래 상태이면
+undo chain을 역방향으로 따라가며 과거 상태를 재구성한다.
+
+SCN은 데이터를 저장하지 않는다.
+SCN은 어디까지 되돌릴지 판단하는 기준점이다.
+실제 과거 데이터는 undo가 들고 있다.
+
+Undo에는 before image, 이전 undo 위치(pointer), 트랜잭션/SCN 관련 정보가 저장되며,
+이 정보들이 chain을 이뤄 과거 버전을 복원하게 한다.
+
+commit 후에도 undo는 바로 사라지지 않는다.
+이미 시작된 SELECT의 consistent read를 위해 남아 있어야 하기 때문이다.
+
+ORA-01555는 단순히 undo가 없는 것이 아니라,
+필요한 시점까지 따라가야 할 undo chain이 중간에서 끊겨
+과거 복원이 실패한 상태다.
+
+즉 Oracle은 과거를 따로 저장하는 것이 아니라,
+현재 상태와 undo 이력을 이용해
+필요할 때 과거를 만들어내는 구조로 동작한다.</div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,6 +1,7 @@
 <!-- oracle_dba_index.html -->
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,7 +15,11 @@
       --line: #e5e7eb;
       --accent: #1d4ed8;
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 40px 20px 80px;
@@ -23,10 +28,12 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
       line-height: 1.7;
     }
+
     .wrap {
       max-width: 980px;
       margin: 0 auto;
     }
+
     .hero {
       background: linear-gradient(135deg, #0f172a, #1e3a8a);
       color: white;
@@ -35,15 +42,18 @@
       margin-bottom: 24px;
       box-shadow: 0 20px 40px rgba(15, 23, 42, .18);
     }
+
     .hero h1 {
       margin: 0 0 10px;
       font-size: 34px;
       line-height: 1.3;
     }
+
     .hero p {
       margin: 0;
-      color: rgba(255,255,255,.86);
+      color: rgba(255, 255, 255, .86);
     }
+
     .card {
       background: var(--card);
       border: 1px solid var(--line);
@@ -51,32 +61,41 @@
       padding: 24px;
       box-shadow: 0 8px 24px rgba(15, 23, 42, .04);
     }
+
     .item {
       padding: 18px 0;
       border-top: 1px solid var(--line);
     }
+
     .item:first-child {
       border-top: none;
       padding-top: 0;
     }
+
     .item:last-child {
       padding-bottom: 0;
     }
+
     a {
       color: var(--accent);
       text-decoration: none;
       font-weight: 800;
     }
+
     .small {
       color: var(--muted);
       font-size: 14px;
       margin-top: 6px;
     }
+
     @media (max-width: 760px) {
-      .hero h1 { font-size: 28px; }
+      .hero h1 {
+        font-size: 28px;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header class="hero">
@@ -86,20 +105,41 @@
 
     <section class="card">
       <div class="item">
-        <a href="oracle_dba_notes_001.html">001. 9~12페이지 · Oracle 아키텍처 / WAL / 프로세스 모델 / Too Many Connections / DB Pooling</a>
-        <div class="small">Database vs Instance, SGA, Data Buffer Cache, Redo Log Buffer, Dedicated Server, Shared Server, Connection Pooling</div>
+        <a href="oracle_dba_notes_001.html">001. 9~12페이지 · Oracle 아키텍처 / WAL / 프로세스 모델 / Too Many Connections / DB
+          Pooling</a>
+        <div class="small">Database vs Instance, SGA, Data Buffer Cache, Redo Log Buffer, Dedicated Server, Shared
+          Server, Connection Pooling</div>
       </div>
 
       <div class="item">
-        <a href="oracle_dba_notes_002.html">002. 13~18페이지 · SGA/PGA / Buffer Cache / Redo / Recovery / Shared Pool / Sort·Hash / OLTP vs Batch / Hard Parsing / Bind Variable / PGA 위험성</a>
-        <div class="small">SGA와 PGA의 역할 분리, Buffer Cache의 상태와 LRU, Redo와 Checkpoint, Dictionary Cache / Library Cache, Sort·Hash 작업 위치, 배치·병렬 시 PGA 폭증 위험</div>
+        <a href="oracle_dba_notes_002.html">002. 13~18페이지 · SGA/PGA / Buffer Cache / Redo / Recovery / Shared Pool /
+          Sort·Hash / OLTP vs Batch / Hard Parsing / Bind Variable / PGA 위험성</a>
+        <div class="small">SGA와 PGA의 역할 분리, Buffer Cache의 상태와 LRU, Redo와 Checkpoint, Dictionary Cache / Library Cache,
+          Sort·Hash 작업 위치, 배치·병렬 시 PGA 폭증 위험</div>
       </div>
 
       <div class="item">
-        <a href="oracle_dba_notes_003.html">003. 19~25페이지 · 프로세스 협업 / PMON / SMON / DBWR / LGWR / CKPT / checkpoint / file header / commit 병목 / 지속가능한 최적화 / 정합성</a>
-        <div class="small">Server Process와 Background Process 협업, instance recovery, checkpoint의 의미, control file / data file header, DBWR·LGWR 병목 해석, redo / commit / recovery 관점의 운영 전략</div>
+        <a href="oracle_dba_notes_003.html">003. 19~25페이지 · 프로세스 협업 / PMON / SMON / DBWR / LGWR / CKPT / checkpoint /
+          file header / commit 병목 / 지속가능한 최적화 / 정합성</a>
+        <div class="small">Server Process와 Background Process 협업, instance recovery, checkpoint의 의미, control file / data
+          file header, DBWR·LGWR 병목 해석, redo / commit / recovery 관점의 운영 전략</div>
       </div>
+      <!-- index에 추가할 div만 -->
+
+      <div class="item">
+        <a href="oracle_dba_notes_004.html">037~048페이지 · 파라미터 파일 / v$parameter / PFILE·SPFILE / 환경변수 / 저장구조·Undo
+          연결</a>
+        <div class="small">Server Process와 Background Process 협업, instance recovery, checkpoint의 의미, control file / data
+          file header, DBWR·LGWR 병목 해석, redo / commit / recovery 관점의 운영 전략</div>
+      </div>
+      <div class="item">
+        <a href="oracle_dba_notes_005.html">Undo Deep Dive · SCN / Undo Chain / Consistent Read / ORA-01555</a>
+        <div class="small">Undo의 존재 이유, redo와의 차이, Query SCN과 Block SCN 비교, before image와 pointer, undo chain, snapshot
+          too old의 정확한 의미까지 깊게 정리</div>
+      </div>
+
     </section>
   </div>
 </body>
+
 </html>
