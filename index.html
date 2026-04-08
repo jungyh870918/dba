@@ -133,7 +133,7 @@
           file header, DBWR·LGWR 병목 해석, redo / commit / recovery 관점의 운영 전략</div>
       </div>
       <div class="item">
-        <a href="oracle_dba_notes_005.html">Undo Deep Dive · SCN / Undo Chain / Consistent Read / ORA-01555</a>
+        <a href="undo_deep_dive.html">Undo Deep Dive · SCN / Undo Chain / Consistent Read / ORA-01555</a>
         <div class="small">Undo의 존재 이유, redo와의 차이, Query SCN과 Block SCN 비교, before image와 pointer, undo chain, snapshot
           too old의 정확한 의미까지 깊게 정리</div>
       </div>
@@ -150,7 +150,14 @@
         <div class="small">각 연습문제를 통해 실행계획 확인 도구들의 차이, 예상 계획과 실제 실행 정보 구분, trace 기반 증거 수집 흐름, DBA 관점의 SQL 분석 목표와 학습 포인트
           정리</div>
       </div>
-
+      <div class="item">
+        <a href="oracle_dba_notes_007.html">007. 61~69페이지 · Control File / Mount / control_files / 미러링 / 경로변경 절차</a>
+        <div class="small">
+          Mount 단계에서 Control File을 읽는 이유, DB 구조 메타정보(Database Name·Datafile·Checkpoint),
+          control_files 파라미터 의미, 다중 미러링 구조, spfile 반영 vs running system 차이,
+          Control File 추가 시 파라미터 수정 + 실제 파일 복사 + 재기동 절차
+        </div>
+      </div>
     </section>
   </div>
 </body>

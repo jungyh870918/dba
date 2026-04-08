@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 007</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.86);
+    }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    p { margin: 10px 0; }
+    ul {
+      margin: 10px 0;
+      padding-left: 22px;
+    }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 007</h1>
+      <p>61~69페이지 · Control File / Mount / control_files 파라미터 / 미러링 / 추가·경로변경 절차</p>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">← 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">범위 개요</div>
+      <h2>이번 범위의 정체</h2>
+      <p>이번 구간은 <strong>2장 DB File 구조</strong>의 시작부이며, 실질적으로는 <strong>Control File</strong>에 집중된 범위다. 61페이지는 장 전환 페이지 성격이 강하고, 실제 학습 포인트는 62~69페이지에서 전개된다.</p>
+      <div class="point">
+        핵심은 단순히 “Control File이 무엇인가”를 외우는 것이 아니라, <strong>DB가 기동될 때 왜 먼저 필요하며, DBA가 실제로 어떻게 추가·관리하는가</strong>를 흐름으로 이해하는 것이다.
+      </div>
+      <div class="flow">메모리 / 프로세스 중심 설명
+→ 이제 디스크 파일 구조 설명으로 이동
+→ 그 시작점이 Control File</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">62페이지</div>
+      <h2>아키텍처 그림이 다시 나오는 이유</h2>
+      <p>62페이지에서는 Oracle 전체 아키텍처 그림이 다시 나온다. 여기서 보이는 핵심 파일은 다음 세 가지다.</p>
+      <ul>
+        <li>Datafiles</li>
+        <li>Controlfiles</li>
+        <li>Redo Log files</li>
+      </ul>
+      <div class="point">
+        이 페이지의 의미는 “이제부터는 SGA, PGA, 프로세스 같은 메모리/실행 구조가 아니라 <strong>실제 DB를 구성하는 디스크 파일 구조</strong>를 본다”는 관점 전환이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">63페이지</div>
+      <h2>Control File의 가장 중요한 정의</h2>
+      <p>63페이지 핵심 내용은 다음과 같다.</p>
+      <ul>
+        <li>Database를 기동해서 <strong>Mount 상태</strong>로 만들기 위해 <strong>Control File을 읽는다</strong>.</li>
+        <li>Control File 위치는 parameter file의 <code>control_files</code>에 있다.</li>
+        <li>Control File은 보통 2개 이상 존재한다.</li>
+        <li>서로 다른 디스크에 위치시켜 안정성을 확보한다.</li>
+      </ul>
+      <div class="flow">DB startup
+→ parameter file 확인
+→ control_files 경로 확인
+→ Control File 읽기
+→ Mount 상태 진입</div>
+      <div class="point">
+        즉, Control File은 그냥 존재하는 파일이 아니라 <strong>DB를 Mount 상태로 올리기 위한 기준 파일</strong>이다. 이 파일이 없으면 Oracle은 DB 구조를 파악하지 못하므로 mount 단계에 제대로 들어갈 수 없다.
+      </div>
+      <div class="warn">
+        여기서 잡아야 할 핵심 사고는 <strong>“Control File = DB 구조를 정의하는 기준 파일”</strong>이라는 점이다. datafile보다 먼저 필요하다는 점이 중요하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">64페이지</div>
+      <h2>Control File 안에 실제로 들어 있는 내용</h2>
+      <p>64페이지에서는 Control File에 저장되는 대표 정보가 제시된다.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>구조 정보</h3>
+          <ul>
+            <li>Database Name</li>
+            <li>테이블스페이스 정보</li>
+            <li>데이터 파일 목록</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>복구 기준 정보</h3>
+          <ul>
+            <li>Checkpoint SCN</li>
+            <li>기타 Record 정보</li>
+          </ul>
+        </div>
+      </div>
+      <div class="point">
+        이걸 DBA 관점으로 해석하면, Control File은 <strong>DB 전체 구조와 복구 기준점을 기억하는 중앙 메타데이터 저장소</strong>다.
+      </div>
+      <div class="flow">“이 DB 이름은 무엇인가?”
+→ “어떤 datafile이 붙어 있는가?”
+→ “checkpoint는 어디까지 진행됐는가?”
+→ 이 질문들의 답을 Control File이 들고 있다</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">63~64페이지 확장 이해</div>
+      <h2>왜 Control File이 그렇게 중요한가</h2>
+      <p>슬라이드 본문에는 직접 길게 써 있지 않지만, 앞의 문장들로부터 반드시 이해해야 하는 흐름이 있다.</p>
+      <div class="flow">Mount 단계
+→ Datafile을 본격적으로 읽기 전
+→ Redo를 적용하기 전
+→ 먼저 Control File로 DB의 구조를 인식</div>
+      <div class="point">
+        즉, Control File은 DB의 <strong>지도(map)</strong> 역할을 한다. Oracle은 디스크에 datafile이 있다는 사실만으로 DB를 여는 것이 아니라, <strong>Control File을 통해 “이 DB가 어떤 구조인지”를 먼저 파악</strong>하고 다음 단계로 넘어간다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">63페이지</div>
+      <h2>미러링을 왜 하는가</h2>
+      <p>63페이지에서는 Control File이 보통 2개 이상 존재하고, 서로 다른 디스크에 위치한다고 설명한다.</p>
+      <div class="flow">control01.ctl 손상
+→ DB 구조 인식 실패 위험
+→ mount 실패 가능
+→ DB 기동 문제</div>
+      <div class="point">
+        Control File은 기동의 출발점이므로, 하나만 두면 위험하다. 그래서 Oracle은 다음과 같이 여러 개의 Control File을 두고 복제해 둔다.
+      </div>
+      <div class="summary">control01.ctl
+control02.ctl
+control03.ctl</div>
+      <div class="warn">
+        이 범위에서 미러링은 단순한 백업 개념이 아니라, <strong>기동 안정성 확보</strong>를 위한 기본 운영 전략으로 이해해야 한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">확인용 뷰</div>
+      <h2>DBA가 실제로 확인하는 뷰</h2>
+      <p>이 범위에서는 Control File 관련 정보를 확인하기 위한 뷰도 같이 제시한다.</p>
+      <ul>
+        <li><code>v$controlfile</code> : 현재 control file 경로와 엔트리 확인</li>
+        <li><code>v$controlfile_record_section</code> : control file 내부에 어떤 정보가 저장되는지 확인</li>
+      </ul>
+      <div class="point">
+        즉, 이 장은 개념 설명에서 끝나지 않고, <strong>“실제로 어디서 확인할 것인가”</strong>까지 함께 가르치는 실무 입문 구간이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">66~67페이지</div>
+      <h2>현재 control_files 경로 조회</h2>
+      <p>슬라이드에서는 먼저 아래 SQL로 현재 설정을 조회한다.</p>
+      <div class="summary">SELECT name, value
+FROM v$parameter
+WHERE name = 'control_files';</div>
+      <p>이 조회 결과를 통해 현재 Control File이 어떤 경로에 잡혀 있는지 확인한다. 예시에서는 기존 control01.ctl, control02.ctl 경로가 나타난다.</p>
+      <div class="point">
+        여기서 중요한 건 DBA가 막연히 “있겠지”라고 생각하지 않고, <strong>반드시 현재 설정과 실제 경로를 먼저 확인</strong>한다는 점이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">67페이지</div>
+      <h2>control_files 파라미터 수정</h2>
+      <p>이후 슬라이드에서는 새 Control File 경로를 추가하는 예시를 보여준다.</p>
+      <div class="summary">ALTER SYSTEM SET control_files =
+'C:\app\...\control01.ctl',
+'C:\app\...\control02.ctl',
+'C:\TMP\control03.ctl'
+SCOPE = SPFILE;</div>
+      <p>그리고 결과에서 <strong>ISSYS_MODIFIABLE = FALSE</strong> 성격을 보여 주며, 수정 내용이 <strong>즉시 현재 시스템에 반영되지 않음</strong>을 확인시킨다.</p>
+      <div class="point">
+        여기서 잡아야 할 핵심은 <strong>spfile 변경 = 설정 저장</strong>이지, 현재 떠 있는 인스턴스가 즉시 그 설정으로 바뀌는 것은 아니라는 점이다.
+      </div>
+      <div class="warn">
+        <strong>control_files는 정적(static) 성격의 파라미터</strong>로 봐야 한다. 그래서 재기동 없이 바로 반영되는 종류가 아니다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">절차 핵심</div>
+      <h2>파라미터 수정만으로 끝나지 않는 이유</h2>
+      <p>슬라이드 흐름상 가장 중요한 메시지는 이것이다.</p>
+      <div class="summary">control_files를 바꾸는 일은
+문자열만 바꾸는 작업이 아니다.</div>
+      <p><code>ALTER SYSTEM</code>으로 바꾸는 것은 어디까지나 <strong>경로 정보</strong>를 수정하는 일이다. 하지만 Oracle이 실제로 그 경로의 Control File을 읽으려면, OS 상에 그 파일이 존재해야 한다.</p>
+      <div class="flow">parameter 수정
+→ shutdown
+→ 기존 control file을 새 경로로 실제 복사
+→ startup
+→ 다시 조회해서 반영 확인</div>
+      <div class="point">
+        즉, <strong>Parameter ≠ 실제 파일</strong>이다. 설정과 파일 복사는 별개의 작업이다.
+      </div>
+      <div class="warn">
+        “ALTER SYSTEM 하면 파일도 자동으로 생긴다”라고 이해하면 안 된다. <strong>파일은 직접 복사</strong>해야 한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">69페이지</div>
+      <h2>최종 반영 확인</h2>
+      <p>마지막에는 다시 <code>v$parameter</code>를 조회하여 새 경로가 실제 설정에 포함되었는지 확인한다.</p>
+      <div class="summary">SELECT name, value
+FROM v$parameter
+WHERE name = 'control_files';
+
+→ control01.ctl
+→ control02.ctl
+→ control03.ctl</div>
+      <div class="point">
+        이 단계까지 와야 비로소 Control File 추가 작업이 완료된 것이다. 즉, <strong>경로가 설정에 보이고, DB가 그 설정으로 다시 기동되어야 정상 반영</strong>이라고 볼 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">전체 흐름</div>
+      <h2>이번 범위의 핵심 플로우</h2>
+      <div class="flow">DB startup
+→ control_files 확인
+→ Control File 읽기
+→ DB 구조 인식
+→ Mount 상태 진입
+
+Control File 추가 작업
+
+현재 control_files 조회
+→ control_files 파라미터 수정 (spfile)
+→ shutdown
+→ control file 실제 복사
+→ startup
+→ 다시 조회해서 반영 확인</div>
+      <div class="point">
+        이 범위는 결국 <strong>“Control File이 없으면 mount가 안 되고, Control File 변경 작업은 순서 기반으로 진행해야 한다”</strong>는 점을 가르친다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">마무리 요약</div>
+      <h2>61~69페이지 한 줄 정리</h2>
+      <div class="summary">Control File은 DB를 Mount 상태로 만들기 위한 기준 파일이며,
+경로 변경이나 추가는
+파라미터 수정 + 실제 파일 복사 + 재기동이
+반드시 함께 이루어져야 한다.</div>
+      <p class="muted">다음 범위로 넘어갈 때도 같은 방식으로, 페이지 범위 안의 실제 내용과 그 의미를 함께 묶어 정리하면 된다.</p>
+    </section>
+  </div>
+</body>
+</html>
