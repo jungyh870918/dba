@@ -1,0 +1,613 @@
+<!-- oracle_dba_ops_routine_and_critical_issues.html -->
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oracle DBA 운영 루틴과 치명적 이슈</title>
+    <style>
+      :root {
+        --bg: #f7f8fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --accent: #1d4ed8;
+        --accent-soft: #eff6ff;
+        --warn-soft: #fff7ed;
+        --warn-line: #fed7aa;
+        --danger-soft: #fef2f2;
+        --danger-line: #fecaca;
+        --dark: #111827;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 40px 20px 80px;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR",
+          Arial, sans-serif;
+        line-height: 1.78;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+      .hero {
+        background: linear-gradient(135deg, #7c2d12, #991b1b);
+        color: #fff;
+        border-radius: 24px;
+        padding: 36px;
+        margin-bottom: 24px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      }
+      .hero h1 {
+        margin: 0 0 10px;
+        font-size: 34px;
+        line-height: 1.3;
+      }
+      .hero p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .nav {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px 18px;
+        margin-bottom: 20px;
+      }
+      .nav a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .section {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 28px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 14px;
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 28px;
+        line-height: 1.35;
+      }
+      h3 {
+        margin: 24px 0 10px;
+        font-size: 20px;
+        line-height: 1.45;
+      }
+      p {
+        margin: 10px 0;
+      }
+      ul,
+      ol {
+        margin: 10px 0;
+        padding-left: 22px;
+      }
+      li {
+        margin: 6px 0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        background: #fff;
+      }
+      .flow,
+      .summary {
+        background: var(--dark);
+        color: #f9fafb;
+        border-radius: 16px;
+        padding: 16px 18px;
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        overflow-x: auto;
+        margin: 14px 0;
+      }
+      .point {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin: 14px 0;
+      }
+      .warn {
+        background: var(--warn-soft);
+        border: 1px solid var(--warn-line);
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin: 14px 0;
+      }
+      .danger {
+        background: var(--danger-soft);
+        border: 1px solid var(--danger-line);
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin: 14px 0;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      @media (max-width: 760px) {
+        body {
+          padding: 24px 14px 60px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .hero h1 {
+          font-size: 28px;
+        }
+        h2 {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <h1>Oracle DBA 운영 루틴과 치명적 이슈</h1>
+        <p>
+          심각한 이슈, 근본적 예방책, 실무 루틴, 지속가능한 운영 원칙을 한
+          페이지로 정리
+        </p>
+      </header>
+      <nav class="nav">
+        <a href="index.html">← 메인 인덱스로 돌아가기</a>
+      </nav>
+      <section class="section">
+        <div class="badge">운영 철학</div>
+        <h2>DBA의 목표는 “안 터지게”가 아니라 “터져도 살리게”다</h2>
+        <p>
+          현실의 DB 운영은 문제가 아예 발생하지 않도록 만드는 게임이 아니다.
+          진짜 목표는
+          <strong
+            >문제가 생겨도 서비스 전체가 죽지 않게 하고, 정합성을 지키며, 복구
+            가능성을 확보하는 것</strong
+          >이다.
+        </p>
+
+        <div class="flow">예방 + 감지 + 복구 가능성 확보</div>
+
+        <div class="point">
+          <strong>핵심 철학 3가지:</strong><br />
+          1. 병목 해소 (Performance)<br />
+          2. 제한된 자원 내 최적화 (Efficiency)<br />
+          3. 데이터 정합성 + 손실 방어 (Reliability)
+        </div>
+
+        <div class="warn">
+          <strong>가장 중요한 우선순위:</strong>
+          <strong>정합성 &gt; 복구 가능성 &gt; 안정성 &gt; 성능</strong>. 성능
+          때문에 정합성이 깨지면 끝이다.
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="badge">매일 루틴</div>
+        <h2>DBA가 출근해서 밤사이 점검하는 국룰 루틴</h2>
+        <p>
+          아침 루틴의 핵심은 “이미 터진 문제”보다
+          <strong>곧 터질 문제를 미리 찾는 것</strong>이다.
+        </p>
+
+        <div class="flow">
+          1. DB 살아있는지 확인 2. alert log 확인 3. archive / 디스크 상태 확인
+          4. 백업 정상 여부 확인 5. 주요 wait / 성능 이상 확인 6. 장애 징후 확인
+          7. 전날 작업 영향 확인
+        </div>
+
+        <h3>1. DB 상태 확인</h3>
+        <ul>
+          <li>OPEN 상태인지</li>
+          <li>READ ONLY인지</li>
+          <li>MOUNT 상태인지</li>
+        </ul>
+        <div class="point"><strong>OPEN 아니면 이미 사고</strong>다.</div>
+
+        <h3>2. alert log 확인</h3>
+        <p>
+          모든 중요한 에러는 alert log에 남는다. 실무에서는 tail로 최근 로그부터
+          본다.
+        </p>
+        <ul>
+          <li>ORA- 에러</li>
+          <li>checkpoint 관련 메시지</li>
+          <li>archive 관련 메시지</li>
+          <li>I/O 에러</li>
+          <li>corruption</li>
+        </ul>
+        <div class="flow">
+          alert log에서 자주 보는 대표 메시지 ORA-00257 → archive full ORA-01113
+          → recovery 필요 ORA-01555 → undo 부족 ORA-00600 → 내부 에러
+        </div>
+
+        <h3>3. archive / 디스크 상태 확인</h3>
+        <ul>
+          <li>사용률</li>
+          <li>남은 용량</li>
+          <li>증가 속도</li>
+        </ul>
+        <div class="danger">
+          <strong>archive full = DB 멈춤</strong>. 이건 무조건 매일 확인한다.
+        </div>
+
+        <h3>4. 백업 정상 여부 확인</h3>
+        <ul>
+          <li>전날 backup 성공 여부</li>
+          <li>RMAN 로그</li>
+        </ul>
+        <div class="danger">
+          <strong>백업 안 된 DB = 이미 죽은 DB</strong>라는 감각이 필요하다.
+        </div>
+
+        <h3>5. 성능 이상 탐지</h3>
+        <ul>
+          <li>log file sync</li>
+          <li>db file sequential read</li>
+          <li>free buffer waits</li>
+          <li>buffer busy waits</li>
+        </ul>
+        <p>이건 장애가 나기 전 징후를 읽는 단계다.</p>
+
+        <h3>6. 장애 징후 확인</h3>
+        <ul>
+          <li>long transaction</li>
+          <li>락 걸린 세션</li>
+          <li>세션 폭증</li>
+        </ul>
+        <p>아직 터지진 않았지만 곧 터질 수 있는 상태를 보는 것이다.</p>
+
+        <h3>7. 전날 작업 영향 확인</h3>
+        <ul>
+          <li>배포 있었는지</li>
+          <li>DDL 있었는지</li>
+          <li>대량 batch 있었는지</li>
+        </ul>
+        <div class="point">
+          실무에서는 <strong>문제의 80%가 어제 변경에서 온다</strong>는 감각을
+          가진다.
+        </div>
+
+        <h3>정말 바쁠 때의 최소 루틴</h3>
+        <div class="flow">
+          1. alert log 2. df -h 또는 archive 사용량 3. backup 로그 4. 현재 세션
+          / wait 상태
+        </div>
+
+        <div class="warn">
+          <strong>절대 놓치면 안 되는 3개:</strong><br />
+          1. archive 사용량<br />
+          2. backup 성공 여부<br />
+          3. alert log 에러
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="badge">치명적 이슈</div>
+        <h2>DBA가 실제로 마주하는 심각한 이슈</h2>
+
+        <h3>1. archive 부족 / archive full</h3>
+        <div class="flow">
+          archive log 쌓임 → 디스크 FULL → redo 처리 막힘 → DB 멈춤
+        </div>
+        <p>현업에서 가장 자주 터지는 치명적 사고 중 하나다.</p>
+
+        <h3>2. control file 손상</h3>
+        <div class="flow">
+          control file = DB의 지도 없거나 손상되면 → MOUNT 자체 불가
+        </div>
+
+        <h3>3. parameter file 손상 또는 설정 오류</h3>
+        <div class="flow">parameter 문제 → NOMOUNT 실패 → DB 시작도 못 함</div>
+
+        <h3>4. OPEN 단계 recovery 문제</h3>
+        <div class="flow">
+          shutdown abort 이후 → recovery 필요 → archive 부족 → OPEN 실패
+        </div>
+
+        <h3>5. redo / archive 관련 운영 실패</h3>
+        <div class="flow">
+          redo는 발생하는데 archive 관리 실패 → recovery 불능 또는 운영 중지
+        </div>
+
+        <h3>6. commit 병목 (log file sync)</h3>
+        <div class="flow">
+          commit 과다 → LGWR 자주 기동 → redo I/O 병목 → 저장 버튼 / API 응답
+          지연
+        </div>
+
+        <h3>7. 동시성 경합</h3>
+        <div class="flow">
+          같은 row / 같은 block / 같은 index hotspot → row lock contention → hot
+          block → buffer busy waits
+        </div>
+
+        <h3>8. dirty buffer pressure / free buffer waits</h3>
+        <div class="flow">
+          update 많음 → dirty buffer 증가 → DBWR 부담 증가 → free buffer waits
+        </div>
+
+        <h3>9. PGA 폭발 (batch / parallel)</h3>
+        <div class="flow">
+          sort / hash / parallel worker 증가 → PGA 폭증 → 메모리 압박 / swap /
+          전체 성능 저하
+        </div>
+
+        <h3>10. checkpoint / recovery 범위 증가</h3>
+        <div class="flow">
+          redo 많음 + checkpoint 부담 → restart 후 recovery 오래 걸림
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="badge">근본적 예방</div>
+        <h2>치명적 이슈를 예방하는 현실적이고 실무적인 방법</h2>
+
+        <h3>archive 부족 / archive full 예방</h3>
+        <ul>
+          <li>RMAN으로 archive 자동 삭제 정책 운영</li>
+          <li>백업 후 삭제 원칙 유지</li>
+          <li>archive 전용 공간 또는 스토리지 분리</li>
+          <li>FRA(Fast Recovery Area) 용량 설정</li>
+          <li>사용량 모니터링 자동화</li>
+        </ul>
+        <div class="point">
+          <strong>핵심:</strong> archive 문제는 대부분 기술보다
+          <strong>운영 관리 실패</strong>다.
+        </div>
+
+        <h3>control file 손상 예방</h3>
+        <ul>
+          <li>다중 control file 구성</li>
+          <li>서로 다른 디스크 / LUN / 스토리지에 분산</li>
+          <li>control file autobackup 활성화</li>
+          <li>alert log 감시</li>
+        </ul>
+        <div class="point">
+          <strong>핵심:</strong> control file은 <strong>반드시 여러 개</strong>.
+          이건 선택이 아니라 기본이다.
+        </div>
+
+        <h3>parameter file 손상 예방</h3>
+        <ul>
+          <li>spfile + pfile 둘 다 유지</li>
+          <li>변경 이력 관리</li>
+          <li>가능한 alter system 사용, 직접 파일 수정 최소화</li>
+          <li>긴급 startup용 pfile 별도 보관</li>
+        </ul>
+
+        <h3>commit 병목 예방</h3>
+        <ul>
+          <li>commit을 너무 잘게 쪼개지 않기</li>
+          <li>loop 안 commit 남발 금지</li>
+          <li>redo I/O가 빠른 스토리지 사용</li>
+          <li>업무 단위에 맞는 commit 묶음 설계</li>
+        </ul>
+
+        <h3>동시성 경합 예방</h3>
+        <ul>
+          <li>같은 키 / 같은 block에 쓰기 집중되지 않도록 키 설계</li>
+          <li>index hotspot 줄이기</li>
+          <li>애플리케이션 처리 방식 수정</li>
+          <li>sequence / insert 패턴 분산</li>
+        </ul>
+
+        <h3>dirty buffer pressure 예방</h3>
+        <ul>
+          <li>대량 update 시간 분리</li>
+          <li>write I/O 성능 확보</li>
+          <li>batch 시간 조정</li>
+          <li>workload 분산</li>
+        </ul>
+
+        <h3>PGA 폭발 예방</h3>
+        <ul>
+          <li>parallel 상한 설정</li>
+          <li>pga_aggregate_target / pga_aggregate_limit 운영</li>
+          <li>batch와 OLTP 시간 분리</li>
+          <li>대형 sort / hash 쿼리 통제</li>
+        </ul>
+
+        <h3>공통 근본 대책</h3>
+        <div class="flow">복제 + 자동화 + 모니터링 + 복구 테스트</div>
+
+        <ul>
+          <li>단일 장애 지점 제거</li>
+          <li>수동 관리 대신 자동화</li>
+          <li>용량 / 에러 / 백업 / wait 모니터링</li>
+          <li>백업만 하지 말고 복구 시나리오 테스트</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="badge">지속가능한 운영</div>
+        <h2>무조건 자원 늘리기가 아니라, 제한된 범위 안에서의 최적화</h2>
+        <p>
+          느리다고 메모리, 디스크, CPU를 무조건 늘리는 건 지속가능한 운영이
+          아니다. 진짜 문제의 상당수는 자원 부족이 아니라
+          <strong
+            >구조 문제, SQL 패턴 문제, 동시성 문제, 운영 시간대 문제</strong
+          >에서 온다.
+        </p>
+
+        <div class="flow">
+          느리다 → 자원 늘리자 ❌ 느리다 → 병목 위치를 찾자 ⭕
+        </div>
+
+        <h3>DBA의 기본 전략</h3>
+        <div class="flow">
+          1. 병목 위치를 찾는다 2. 병목을 이동시킨다 3. 병목을 분산시킨다
+        </div>
+
+        <p>
+          병목은 완전히 사라지기보다 다른 지점으로 옮겨지는 경우가 많다. 그래서
+          DBA는 항상 균형을 본다.
+        </p>
+
+        <h3>지속가능한 최적화의 실제 방법</h3>
+        <ul>
+          <li>peak 시간, batch 시간, commit 패턴을 기준으로 부하 예측</li>
+          <li>PGA limit, parallel 제한, session 수 제한 같은 상한 설정</li>
+          <li>OLTP와 batch 분리</li>
+          <li>redo, datafile, temp, archive 경로 분리</li>
+          <li>queue, retry, rate limit 같은 완충 구조 도입</li>
+        </ul>
+
+        <div class="warn">
+          <strong>핵심 문장:</strong> 목표는 “지금 빠른 시스템”이 아니라
+          <strong>계속 버티는 시스템</strong>이다.
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="badge">보편적 운영 전략</div>
+        <h2>실무에서 자주 쓰는 현실적 기준</h2>
+        <p>정답 세팅은 없다. 대신 거의 모든 DBA가 공통적으로 보는 축은 있다.</p>
+
+        <div class="flow">
+          1. workload (OLTP vs Batch) 2. 동시 사용자 수 3. 트랜잭션 패턴 (commit
+          빈도) 4. I/O 성능
+        </div>
+
+        <h3>요즘 시대의 방향</h3>
+        <div class="flow">
+          과거: 디스크를 아껴라 현재: I/O 병목과 동시성을 줄여라
+        </div>
+
+        <p>
+          저장공간 자체보다 redo latency, random I/O, cache 효율, 동시성이 더
+          중요하다.
+        </p>
+
+        <div class="point">
+          <strong>실무 우선순위:</strong>
+          <strong>용량 &lt; 성능 &lt; 안정성(정합성)</strong>
+        </div>
+
+        <h3>자주 쓰는 운영 전략 예시</h3>
+        <ul>
+          <li>redo log는 너무 작지도 크지도 않게 유지</li>
+          <li>commit은 너무 자주도 너무 늦게도 하지 않도록 설계</li>
+          <li>OLTP는 SGA 중심, Batch는 PGA 중심으로 본다</li>
+          <li>redo / datafile / temp / archive를 분리해 서로 영향을 줄인다</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <div class="badge">가장 자주 보는 병목</div>
+        <h2>실무에서 가장 빈번하고 가장 신경 써야 하는 지점</h2>
+
+        <h3>1위: log file sync</h3>
+        <p>
+          commit이 많고 redo I/O가 느릴 때 가장 먼저 체감된다. 사용자는 “저장
+          버튼 누르면 느리다”, “API 응답이 끊긴다”로 느낀다.
+        </p>
+
+        <h3>2위: 동시성 경합</h3>
+        <p>
+          같은 데이터, 같은 block, 같은 index 지점에 접근이 몰리면 hot block /
+          row lock contention이 발생한다.
+        </p>
+
+        <h3>3위: Buffer Cache 부족</h3>
+        <p>physical read 증가, I/O 지연, 응답 지연으로 이어진다.</p>
+
+        <h3>4위: PGA 폭발</h3>
+        <p>
+          batch / parallel / sort / hash join이 겹칠 때 전체 메모리 압박으로
+          이어진다.
+        </p>
+
+        <h3>5위: free buffer waits</h3>
+        <p>dirty buffer가 많고 DBWR가 못 따라갈 때 나타난다.</p>
+
+        <h3>6위: checkpoint 부담</h3>
+        <p>restart 후 recovery 시간이 길어지거나 write burst를 만들 수 있다.</p>
+
+        <div class="warn">
+          <strong>실무 감각:</strong> 가장 많이 보는 병목은 보통
+          <strong>commit → LGWR</strong>, <strong>동시성 경합</strong>,
+          <strong>I/O 부족</strong>에서 먼저 체감된다.
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="badge">정합성</div>
+        <h2>데이터 손실 방어와 정합성 유지의 핵심</h2>
+        <p>
+          Oracle의 기본 철학은
+          <strong>redo가 살아 있으면 데이터는 복구 가능하다</strong>는 것이다.
+        </p>
+
+        <div class="flow">
+          Redo Log → 반드시 먼저 기록 (WAL) Archive Log → 이후 복구 근거
+          Checkpoint → 기준점 Undo → rollback / consistent read
+        </div>
+
+        <h3>위험 케이스 해석</h3>
+        <ul>
+          <li><strong>redo 손실</strong> → 복구 불능 가능성</li>
+          <li><strong>commit 전 crash</strong> → 반영 안 됨</li>
+          <li><strong>commit 후 datafile 미반영</strong> → redo로 복구 가능</li>
+        </ul>
+
+        <div class="point">
+          <strong>핵심 문장:</strong>
+          <strong>정합성은 datafile이 아니라 redo가 지킨다.</strong>
+        </div>
+
+        <h3>읽기 정합성</h3>
+        <div class="flow">
+          SELECT → consistent read (undo 사용) UPDATE → current read
+        </div>
+
+        <p>
+          읽는 동안 데이터가 바뀌어도 일관된 결과를 보장하기 위해 undo와 SCN
+          기반으로 동작한다.
+        </p>
+      </section>
+
+      <section class="section">
+        <div class="badge">최종 요약</div>
+        <h2>한 페이지 요약</h2>
+        <div class="summary">
+          DBA의 역할은 단순히 장애가 나면 고치는 사람이 아니라, 징후를 먼저
+          읽고, 병목을 통제하고, 정합성과 복구 가능성을 지키는 사람이다. 매일
+          필수 루틴은 alert log, archive 사용량, backup 성공 여부, 현재 wait와
+          세션 이상 징후를 확인하는 것이다. 치명적 이슈는 archive full, control
+          file 손상, parameter 손상, OPEN 단계 recovery 문제, commit 병목,
+          동시성 경합, dirty buffer pressure, PGA 폭발이다. 예방책의 공통 분모는
+          복제 + 자동화 + 모니터링 + 복구 테스트다. 좋은 DB는 단순히 빠른 DB가
+          아니라, 무너지지 않는 DB다. 성능보다 정합성, 정합성보다 복구 가능성을
+          먼저 보는 사고방식이 현업 DBA의 핵심이다.
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

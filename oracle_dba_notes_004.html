@@ -1,10 +1,10 @@
-<!-- oracle_dba_notes_003.html -->
+<!-- oracle_dba_notes_004.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oracle DBA 학습 노트 003</title>
+  <title>Oracle DBA 학습 노트 004</title>
   <style>
     :root {
       --bg: #f7f8fb;
@@ -27,17 +27,14 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
       line-height: 1.78;
     }
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
     .hero {
       background: linear-gradient(135deg, #0f172a, #1e3a8a);
       color: #fff;
       border-radius: 24px;
       padding: 36px;
       margin-bottom: 24px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      box-shadow: 0 20px 40px rgba(15,23,42,.18);
     }
     .hero h1 {
       margin: 0 0 10px;
@@ -46,7 +43,7 @@
     }
     .hero p {
       margin: 0;
-      color: rgba(255,255,255,0.86);
+      color: rgba(255,255,255,.86);
     }
     .nav {
       background: var(--card);
@@ -66,7 +63,7 @@
       border-radius: 24px;
       padding: 28px;
       margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 24px rgba(15,23,42,.04);
     }
     .badge {
       display: inline-block;
@@ -89,10 +86,7 @@
       line-height: 1.45;
     }
     p { margin: 10px 0; }
-    ul {
-      margin: 10px 0;
-      padding-left: 22px;
-    }
+    ul { margin: 10px 0; padding-left: 22px; }
     li { margin: 6px 0; }
     .grid {
       display: grid;
@@ -144,575 +138,559 @@
 <body>
   <div class="wrap">
     <header class="hero">
-      <h1>Oracle DBA 학습 노트 003</h1>
-      <p>범위: PDF 19~25페이지 + 이 범위에서 추가로 정리한 checkpoint / file header / DBWR / LGWR / commit 병목 / 지속가능한 최적화 / 정합성 / 데이터 손실 방어</p>
+      <h1>Oracle DBA 학습 노트 004</h1>
+      <p>범위: PDF 26~33페이지 + startup / shutdown / NOMOUNT / MOUNT / OPEN / read only / restrict / 단계별 장애 원인 / 예방 관점까지 포함</p>
     </header>
 
     <nav class="nav">
-      <a href="index.html">← 메인 인덱스로 돌아가기</a>
+      <a href="oracle_dba_index.html">← 메인 인덱스로 돌아가기</a>
     </nav>
 
     <section class="section">
       <div class="badge">1단계 · 페이지 매칭</div>
-      <h2>19~25페이지가 전체 구조에서 차지하는 위치</h2>
-      <p>이 범위는 앞에서 본 메모리 구조를 실제로 움직이는 <strong>프로세스 협업 구간</strong>이다. 9~18페이지가 구조 설명이었다면, 19~25페이지는 <strong>누가 언제 기록하고, 누가 나중에 내리고, 장애 나면 누가 복구하는가</strong>를 설명한다.</p>
+      <h2>26~33페이지가 전체 구조에서 차지하는 위치</h2>
+      <p>이 범위는 지금까지 배운 메모리, 프로세스, control file, checkpoint, recovery 개념을 실제 기동·종료 절차에 연결하는 장이다. 즉, Oracle 내부 구조를 “운영 절차”로 변환하는 구간이다.</p>
 
       <div class="grid">
         <div class="card">
           <h3>직접 등장하는 개념</h3>
           <ul>
-            <li>User Process / Server Process / Background Process</li>
-            <li>PMON</li>
-            <li>SMON</li>
-            <li>DBWR</li>
-            <li>LGWR</li>
-            <li>CKPT</li>
-            <li>Instance Recovery</li>
-            <li>Fast Commit</li>
-            <li>Checkpoint</li>
+            <li>Startup</li>
+            <li>Shutdown</li>
+            <li>NOMOUNT / MOUNT / OPEN</li>
+            <li>parameter file</li>
+            <li>control file</li>
+            <li>datafile / redo log file</li>
+            <li>read only open</li>
+            <li>restrict mode</li>
+            <li>shutdown normal / transactional / immediate / abort</li>
           </ul>
         </div>
         <div class="card">
           <h3>앞 범위와 연결되는 개념</h3>
           <ul>
-            <li>SGA / PGA</li>
-            <li>Data Buffer Cache</li>
-            <li>Redo Log Buffer</li>
-            <li>WAL</li>
-            <li>Roll Forward / Roll Back</li>
-            <li>undo 역할</li>
-            <li>startup / recovery 흐름</li>
+            <li>Database vs Instance</li>
+            <li>SGA / background process</li>
+            <li>CKPT / SMON / recovery</li>
+            <li>control file의 역할</li>
+            <li>redo / checkpoint 기준점</li>
+            <li>장애 후 startup 시 recovery 흐름</li>
           </ul>
         </div>
       </div>
 
       <div class="point">
-        <strong>핵심 포인트:</strong> 이 범위는 Oracle의 백그라운드 프로세스가 어떻게 역할을 나눠서 <strong>실행, 기록, 지연쓰기, 기준점 관리, 복구, 자원 정리</strong>를 분담하는지 보여준다.
+        <strong>핵심 포인트:</strong> Oracle은 DB를 한 번에 켜고 끄는 것이 아니라, <strong>인스턴스를 만들고 → 파일 지도를 읽고 → 실제 데이터를 열고 → 역순으로 닫는</strong> 단계적 운영 구조를 가진다.
       </div>
     </section>
 
     <section class="section">
-      <div class="badge">2단계 · 프로세스 구조</div>
-      <h2>User / Server / Background Process는 어떻게 역할이 갈리나</h2>
+      <div class="badge">2단계 · 기동 철학</div>
+      <h2>왜 startup을 NOMOUNT → MOUNT → OPEN으로 나누는가</h2>
+      <p>Oracle은 단순한 프로그램이 아니라, 메모리도 띄워야 하고, 백그라운드 프로세스도 시작해야 하고, 어떤 파일을 열지 알아야 하고, 마지막으로 그 파일들이 정상인지까지 확인해야 한다. 그래서 DB를 한 번에 여는 게 아니라 <strong>단계적으로 확인하며 올린다</strong>.</p>
 
-      <h3>User Process</h3>
-      <p>클라이언트 쪽에서 움직이는 프로세스다. 예를 들어 사용자 PC의 SQL*Plus, SQL Developer, WAS 서버 쪽 DB 연결 세션 등이 여기에 해당한다. 즉, <strong>요청을 보내는 쪽</strong>이다.</p>
+      <div class="flow">1. 인스턴스를 먼저 만들고
+2. DB 파일 지도를 읽고
+3. 실제 데이터 파일을 열어 서비스 상태로 전환</div>
 
-      <h3>Server Process</h3>
-      <p>DB 서버 쪽에서 사용자 요청을 실제로 처리하는 프로세스다.</p>
+      <p>즉 startup은 “켜기”가 아니라 <strong>점검을 포함한 단계별 기동 절차</strong>다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · NOMOUNT</div>
+      <h2>NOMOUNT: 인스턴스만 만든 상태</h2>
+      <p>NOMOUNT 단계에서는 parameter file을 읽고 SGA 및 백그라운드 프로세스를 기동한다. 이 단계에서 생기는 것은 인스턴스 자체다.</p>
+
+      <h3>이 단계에서 생기는 것</h3>
       <ul>
-        <li>SQL 파싱</li>
-        <li>최적화</li>
-        <li>커서 오픈</li>
-        <li>SQL 실행</li>
-        <li>블록 읽기</li>
-        <li>필요 시 정렬</li>
-        <li>최종 결과 반환</li>
-      </ul>
-      <p>즉, <strong>User Process와 SGA 사이에서 SQL 실행을 담당하는 실무자</strong>다.</p>
-
-      <h3>Background Process</h3>
-      <p>DBMS 운영 자체를 책임지는 프로세스다. 필수 백그라운드 프로세스는 PMON, SMON, DBWR, LGWR, CKPT다. 즉, 서버 프로세스가 요청을 처리한다면, 백그라운드 프로세스는 <strong>정리, 기록, 복구, 동기화</strong>를 담당한다.</p>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 자원 정리</div>
-      <h2>PMON: 죽은 세션 뒤처리 담당</h2>
-      <p>PMON은 좀비 서버 프로세스를 제거하고, 그 프로세스가 쓰던 PGA 같은 자원을 회수한다. 사용자가 작업 중 비정상 종료되거나 네트워크가 끊기거나 서버 프로세스가 죽었을 때, 그 세션이 잡고 있던 자원을 깔끔하게 정리해야 시스템이 오염되지 않는다.</p>
-
-      <div class="point">
-        <strong>실무 의미:</strong> 운영 중 세션은 정상 종료만 하지 않는다. 끊긴 세션, 죽은 프로세스, 반쯤 끝난 작업이 자주 생긴다. PMON은 그런 쓰레기 자원을 치워서 시스템을 정상 상태로 되돌리는 역할이다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 인스턴스 복구</div>
-      <h2>SMON: 죽은 인스턴스를 redo와 undo로 되살린다</h2>
-      <p>SMON의 핵심 역할은 instance recovery다. Oracle은 datafile에 바로 쓰지 않고 redo를 먼저 남기고 dirty buffer는 나중에 datafile에 내리기 때문에, 인스턴스가 갑자기 죽으면 메모리는 사라지고 datafile에는 일부만 반영되어 있을 수 있다. 이 상태를 일관되게 되살리는 것이 SMON이다.</p>
-
-      <h3>Roll Forward</h3>
-      <p>마지막 checkpoint 이후 redo를 읽어 최근까지 다시 적용한다. 즉, 메모리에만 있었고 파일에는 아직 안 내려간 변경을 redo로 다시 밀어 넣는다.</p>
-
-      <h3>Roll Back</h3>
-      <p>그중 commit되지 않은 작업은 undo를 이용해 제거한다. 즉, redo로 재생한 뒤 완료되지 않은 트랜잭션만 되돌린다.</p>
-
-      <h3>CKPT 발행</h3>
-      <p>복구가 끝나면 새로운 기준점을 만든다.</p>
-
-      <div class="flow">SMON = 인스턴스 장애 후
-redo로 다시 밀어 넣고(roll forward),
-commit 안 된 것은 undo로 제거하는(roll back)
-복구 담당 프로세스</div>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 지연쓰기</div>
-      <h2>DBWR: dirty buffer를 datafile로 내리는 프로세스</h2>
-      <p>DBWR는 DB Buffer Cache의 내용을 Datafile로 내리는 프로세스다. Oracle은 변경을 버퍼 캐시에 먼저 반영하고, dirty buffer를 나중에 datafile에 쓴다. 이 지연쓰기 구조 덕분에 commit이 빠르다.</p>
-
-      <h3>왜 DBWR가 필요한가</h3>
-      <ul>
-        <li>dirty buffer를 언젠가 디스크에 내려야 한다.</li>
-        <li>free buffer를 확보해야 한다.</li>
-        <li>checkpoint 기준을 맞춰야 한다.</li>
+        <li>SGA</li>
+        <li>PMON / SMON / DBWR / LGWR / CKPT 같은 background process</li>
+        <li>instance 자체</li>
       </ul>
 
-      <div class="point">
-        <strong>Deferred Write / Fast Commit의 연결:</strong> commit 시점에 datafile을 바로 쓰지 않고, dirty buffer는 나중에 DBWR가 처리한다. 그래서 commit이 빠르다.
-      </div>
-
-      <h3>DBWR 기동 요건</h3>
+      <h3>이 단계에서 아직 하지 않은 것</h3>
       <ul>
-        <li>주기적 timeout</li>
-        <li>checkpoint 발생</li>
-        <li>dirty buffer 임계치 초과</li>
-        <li>free buffer 부족</li>
-        <li>direct path read 직전</li>
-        <li>tablespace 상태 변경</li>
-        <li>backup, truncate, drop 등</li>
+        <li>control file open 안 함</li>
+        <li>datafile open 안 함</li>
+        <li>redo log file 경로도 control file 기준으로 확인 전</li>
+      </ul>
+
+      <div class="flow">NOMOUNT = DB를 열기 전에
+Oracle 엔진(인스턴스)부터 먼저 띄우는 단계</div>
+
+      <div class="point">
+        <strong>실무 감각:</strong> NOMOUNT는 평소 서비스 상태보다는, <strong>control file 생성/복구, 초기화 문제 진단, startup 문제 분리</strong> 같은 상황에서 특히 중요하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · MOUNT</div>
+      <h2>MOUNT: control file을 읽어 DB의 파일 지도를 확보한 상태</h2>
+      <p>MOUNT 단계에서는 control file을 open 해서, 어떤 datafile과 redo log file을 대상으로 DB를 열어야 하는지 파악한다.</p>
+
+      <h3>MOUNT 상태에서 Oracle이 아는 것</h3>
+      <ul>
+        <li>datafile 목록</li>
+        <li>redo log file 목록</li>
+        <li>각 파일의 위치</li>
+        <li>checkpoint / recovery 관련 메타정보</li>
+        <li>DB 전체 구조</li>
+      </ul>
+
+      <h3>아직 하지 않은 것</h3>
+      <ul>
+        <li>실제 datafile open 안 함</li>
+        <li>사용자 서비스 오픈 안 함</li>
+      </ul>
+
+      <div class="flow">MOUNT = control file을 기준으로
+어떤 DB 파일을 어떻게 열지
+지도만 확보한 상태</div>
+
+      <div class="point">
+        <strong>실무 감각:</strong> MOUNT는 recovery와 아주 깊게 연결된다. control file을 읽어야 datafile 상태, checkpoint 기준, recovery 필요 여부를 판단할 수 있기 때문이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · OPEN</div>
+      <h2>OPEN: datafile까지 열고 서비스 가능한 상태</h2>
+      <p>OPEN 상태는 datafile을 실제로 열고, 유효한 사용자가 정상적으로 데이터 액세스를 할 수 있는 상태다. 여기서 핵심은 “RAM에 다 올렸다”가 아니라 <strong>Oracle이 서비스 가능한 정합성 상태까지 확인했다</strong>는 뜻이다.</p>
+
+      <h3>OPEN에서 비로소 가능한 것</h3>
+      <ul>
+        <li>datafile open</li>
+        <li>redo log file 사용</li>
+        <li>필요 시 recovery 수행 후 서비스 가능</li>
+        <li>사용자 SQL 처리 가능</li>
+      </ul>
+
+      <div class="flow">OPEN = 메모리에 다 올린 상태 ❌
+OPEN = 정상 서비스 가능한 상태 ⭕</div>
+
+      <p>OPEN 상태에서도 datafile 전체를 RAM에 올리는 것은 아니다. 필요한 블록만 Buffer Cache에 올라오고, 나머지는 디스크에 그대로 있다.</p>
+
+      <div class="flow">OPEN 상태
+ ↓
+User SQL 실행 가능
+ ↓
+필요한 블록만
+Datafile → Buffer Cache로 읽어옴</div>
+
+      <div class="point">
+        <strong>핵심 정리:</strong> OPEN은 “램에 다 올렸다”가 아니라, <strong>파일 구조 + 상태 + 정합성까지 확인하고 사용자가 SQL을 실행해도 되는 상태</strong>다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · startup 명령의 내부 동작</div>
+      <h2>startup 명령은 내부적으로 무엇을 하는가</h2>
+      <p>startup은 내부적으로 NOMOUNT → MOUNT → OPEN까지 순차 수행한다. 반면 DBA는 단계별 명령으로 끊어서 문제를 분리 진단할 수 있다.</p>
+
+      <div class="flow">startup
+→ NOMOUNT → MOUNT → OPEN 순차 수행
+
+startup nomount
+→ NOMOUNT까지만
+
+alter database mount
+→ 인스턴스 위에서 control file open
+
+alter database open
+→ MOUNT 상태 DB를 서비스 가능 상태로 전환</div>
+
+      <p>이 단계 구분은 단순 문법이 아니라, <strong>어느 단계에서 문제가 나는지 분리 진단하는 도구</strong>다.</p>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 핵심 흐름</div>
+      <h2>parameter file → control file → datafile 흐름</h2>
+      <p>Oracle startup에서 이 순서는 역행할 수 없다.</p>
+
+      <div class="flow">parameter file → instance 생성
+control file   → open 대상 파일 구조 인지
+datafile       → 실제 데이터 오픈</div>
+
+      <h3>왜 이 순서인가</h3>
+      <ul>
+        <li><strong>parameter file 먼저</strong> — 메모리, 백그라운드 프로세스, 인스턴스 설정이 있어야 엔진을 띄울 수 있다.</li>
+        <li><strong>control file 다음</strong> — 어떤 DB 파일을 열어야 하는지 파일 지도를 알아야 한다.</li>
+        <li><strong>datafile 마지막</strong> — control file 기준으로 파일 목록과 상태를 확인한 뒤 실제 데이터를 연다.</li>
       </ul>
 
       <div class="warn">
-        <strong>실무 해석:</strong> DBWR는 단순히 “주기적으로 쓰는 프로세스”가 아니다. <strong>동기화 필요, 공간 확보 필요, dirty pressure 해소</strong>라는 세 가지 관점에서 움직인다.
+        <strong>핵심:</strong> startup은 “파일 하나 열기”가 아니라, <strong>구조를 확인하며 점진적으로 서비스 상태로 올라가는 절차</strong>다.
       </div>
     </section>
 
     <section class="section">
-      <div class="badge">2단계 · 정합성 보장</div>
-      <h2>LGWR: redo를 먼저 디스크에 밀어 넣는 프로세스</h2>
-      <p>LGWR는 서버 프로세스가 redo log buffer에 기록한 내용을 redo log file에 쓰는 역할을 한다. Oracle에서 데이터 정합성은 datafile보다 <strong>redo 경로</strong>가 먼저 지킨다.</p>
+      <div class="badge">2단계 · 운영 제어 모드</div>
+      <h2>read only open과 restrict mode는 무엇인가</h2>
+
+      <h3>read only open</h3>
+      <div class="flow">startup mount;
+alter database open read only;</div>
+      <p>datafile은 열되 쓰기는 막고, 읽기만 가능한 상태로 open 한다.</p>
+
+      <h4>언제 쓰나</h4>
+      <ul>
+        <li>데이터 점검</li>
+        <li>장애 조사</li>
+        <li>데이터 비교</li>
+        <li>잘못된 데이터 확인(수정 없이)</li>
+        <li>물리적으로 변경을 막고 상태 확인</li>
+      </ul>
 
       <div class="point">
-        <strong>핵심:</strong> commit 순간 가장 중요한 백그라운드 프로세스는 DBWR가 아니라 <strong>LGWR</strong>다.
+        <strong>감각:</strong> DB를 열긴 열되, <strong>절대 건드리지 못하게 잠그는 안전 모드</strong>다.
       </div>
 
-      <h3>LGWR 기동 요건</h3>
+      <h3>restrict mode</h3>
+      <div class="flow">startup restrict;
+-- 또는
+alter system enable restricted session;
+alter system disable restricted session;</div>
+      <p>DB는 open 하되, 일반 사용자는 막고 제한된 사용자만 접속하게 하는 운영 모드다.</p>
+
+      <h4>언제 쓰나</h4>
       <ul>
-        <li>매 3초</li>
-        <li>redo log buffer 1/3 이상</li>
-        <li>1MB 초과</li>
-        <li>DBWR 직전</li>
-        <li>commit 발생</li>
+        <li>긴급 점검</li>
+        <li>배치 전 준비</li>
+        <li>사용자 접속 차단</li>
+        <li>DBA 작업 수행</li>
       </ul>
-
-      <div class="flow">DBWR보다 LGWR가 논리적으로 먼저여야
-장애 시 복구 가능성이 보장된다</div>
-
-      <p>datafile에 먼저 쓰고 redo가 없으면 장애 시 복구 근거가 사라진다. 그래서 WAL 구조에서는 redo가 반드시 선행한다.</p>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 기준점 관리</div>
-      <h2>CKPT: recovery 기준점을 남기는 관리자</h2>
-      <p>Checkpoint는 단순 저장 이벤트가 아니라, <strong>어디까지 file 반영이 되었는지와 장애 시 어디서부터 recovery를 시작할지</strong>를 알려주는 기준점이다.</p>
-
-      <ul>
-        <li>메모리와 file 간 동기화 시점 보장</li>
-        <li>DBWR에게 기동 신호 전달</li>
-        <li>SCN, RBA 저장</li>
-        <li>instance recovery 시 roll forward 시작 위치 지정</li>
-        <li>control file header와 data file header에 checkpoint 정보 기록</li>
-      </ul>
-
-      <h3>SCN과 RBA</h3>
-      <div class="flow">SCN = 논리적 시점
-RBA = redo log 안의 물리적 위치</div>
-
-      <p>SCN은 시간축 같은 논리 기준이고, RBA는 redo 파일 안에서 어디부터 읽을지 알려주는 물리 주소다.</p>
-
-      <h3>“현재 파일 상태가 어디까지 반영됐는지”의 의미</h3>
-      <p>여기서 주로 말하는 파일은 <strong>datafile 쪽 상태</strong>다. checkpoint의 목적은 redo가 어디까지 발생했는지가 아니라, <strong>그 redo 중 어느 시점까지 datafile이 따라왔는지</strong>를 표시하는 것이다.</p>
-
-      <div class="flow">현재 datafile이
-redo의 어느 시점까지 반영된 상태인가</div>
-    </section>
-
-    <section class="section">
-      <div class="badge">추가 질문 정리 · 파일 구조</div>
-      <h2>checkpoint 정보는 왜 control file header와 data file header에 둘 다 기록하나</h2>
-
-      <h3>Control file</h3>
-      <p>DB 전체 구조를 기억하는 중앙 장부다.</p>
-      <ul>
-        <li>database 이름</li>
-        <li>datafile / redo log file 정보</li>
-        <li>checkpoint 관련 정보</li>
-        <li>recovery에 필요한 메타정보</li>
-      </ul>
-
-      <h3>Data file header</h3>
-      <p>각 datafile 맨 앞부분의 관리 영역이다. 각 datafile 자신이 어디까지 반영된 상태인지 알려주는 자기 상태표시가 들어 있다.</p>
-
-      <div class="flow">control file = 중앙 통제본
-data file header = 각 파일의 자기 상태표시</div>
-
-      <p>Oracle은 중앙 관리 장부와 개별 파일의 자기 상태표시를 함께 남겨야 startup / recovery 시 전체 상태와 각 파일 상태를 비교하면서 판단할 수 있다.</p>
-
-      <h3>항상 고정되어 있나</h3>
-      <p>checkpoint 정보를 기록하는 <strong>대상 종류</strong>는 고정적이다. 즉, control file header와 data file header에 기록한다는 구조는 고정이다. 하지만 control file 개수, datafile 개수, 실제 경로는 운영 중 바뀔 수 있다.</p>
 
       <div class="point">
-        <strong>정리:</strong> <strong>어떤 종류의 파일에 기록할지는 고정</strong>이고, 그 파일들의 실제 개수와 경로는 운영 환경에 따라 달라질 수 있다.
+        <strong>감각:</strong> DB는 살아있지만 <strong>일반 사용자 출입 금지</strong>인 상태다.
       </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">추가 질문 정리 · DBA 시각</div>
-      <h2>DBWR와 LGWR 동작 시점을 DBA가 왜 알아야 하나</h2>
-      <p>평소에 DBWR / LGWR를 직접 제어한다기보다, <strong>문제가 생겼을 때 원인을 해석하는 데 핵심</strong>이 된다.</p>
-
-      <h3>장애 분석</h3>
-      <ul>
-        <li>commit이 느리다 → LGWR / redo 경로 의심</li>
-        <li>free buffer waits → DBWR / dirty buffer pressure 의심</li>
-        <li>recovery가 길다 → checkpoint / redo 범위 의심</li>
-      </ul>
-
-      <h3>성능 분석</h3>
-      <ul>
-        <li>log file sync</li>
-        <li>free buffer waits</li>
-        <li>checkpoint not complete</li>
-      </ul>
-      <p>이런 증상을 읽을 때 DBWR / LGWR / CKPT의 동작 원리를 알아야 한다.</p>
-
-      <h3>운영 판단</h3>
-      <ul>
-        <li>redo 로그 크기 조정</li>
-        <li>I/O 분산</li>
-        <li>commit 패턴 개선</li>
-        <li>배치 시간 조정</li>
-      </ul>
 
       <div class="warn">
-        <strong>실무 감각:</strong> DBWR / LGWR 시점을 “직접 조작하는 일”보다, <strong>wait event와 증상을 보고 병목 위치를 해석하는 일</strong>이 훨씬 흔하다.
+        <strong>정리:</strong> read only / restrict는 자동으로 수행되는 디폴트 동작이 아니라, <strong>DBA가 필요할 때 수동으로 사용하는 운영 제어 도구</strong>다. 매일 무조건 쓰는 루틴 명령은 아니지만, 점검·배포·장애 대응에서는 매우 자주 등장한다.
       </div>
     </section>
 
     <section class="section">
-      <div class="badge">추가 질문 정리 · 다중 변경과 commit</div>
-      <h2>같은 데이터에 짧은 시간 동안 여러 조작과 commit이 몰리면</h2>
-      <p>Oracle은 WAL 구조 덕분에 DBWR가 datafile에 늦게 써도 <strong>정합성 자체는 redo가 지켜준다</strong>. 잠재적 위험은 데이터 손상 그 자체보다 <strong>성능 병목, commit 지연, recovery 범위 증가, 경합</strong> 쪽에 있다.</p>
+      <div class="badge">2단계 · 종료 절차</div>
+      <h2>Shutdown은 왜 역순으로 닫히는가</h2>
+      <p>shutdown은 startup의 역순이다. 즉, 서비스 중지 → DB close → mount 해제 → 인스턴스 종료 순으로 진행된다.</p>
 
-      <h3>내부 흐름</h3>
-      <div class="flow">같은 데이터에 대해 짧은 시간 동안 여러 변경 발생
-  ↓
-서버 프로세스가 redo를 계속 생성
-  ↓
-LGWR가 commit 시 redo를 디스크에 먼저 기록
-  ↓
-Buffer Cache의 블록은 계속 최신 상태로 갱신
-  ↓
-DBWR는 나중에 dirty block을 datafile에 반영
-  ↓
-CKPT는 현재 datafile이 redo의 어디까지 따라왔는지 기록
-  ↓
-장애 나면 SMON이 checkpoint 이후 redo부터 recovery 수행</div>
+      <div class="flow">OPEN   → DB Close
+MOUNT  → 마운트 해제
+INSTANCE → 인스턴스 종료</div>
 
-      <h3>중요한 사실</h3>
-      <p>datafile은 중간의 모든 순간을 다 저장할 필요가 없다. redo가 그 사이의 변경 이력을 보존하기 때문이다.</p>
+      <p>사용자 접근 중지, 파일 정리, 메모리와 프로세스 정리를 순서대로 해야 하기 때문에 Oracle은 종료도 단계적이다.</p>
+    </section>
 
-      <h3>잠재적 위험</h3>
+    <section class="section">
+      <div class="badge">2단계 · shutdown 옵션</div>
+      <h2>shutdown 옵션 차이는 왜 실무에서 중요한가</h2>
+
+      <h3>shutdown normal</h3>
       <ul>
-        <li><strong>log file sync 증가</strong> — commit이 많아져 LGWR가 자주 깨어남</li>
-        <li><strong>redo 폭증</strong> — redo 발생량 증가, 로그 스위치와 archive 부담 증가</li>
-        <li><strong>dirty buffer pressure</strong> — dirty buffer가 쌓여 free buffer 부족</li>
-        <li><strong>recovery 범위 증가</strong> — checkpoint 기준 이후 redo 재적용 범위 증가</li>
-        <li><strong>같은 데이터 경합</strong> — row lock contention, hot block, buffer busy waits</li>
+        <li>사용자가 모두 logoff 될 때까지 대기</li>
+        <li>종료되지 않을 확률이 높음</li>
       </ul>
+      <p>이론상 가장 얌전하지만, 운영 통제성이 떨어져 실무에서는 잘 안 쓴다.</p>
+
+      <h3>shutdown transactional</h3>
+      <ul>
+        <li>현재 진행 중인 트랜잭션이 종료될 때까지 대기</li>
+        <li>그 후 세션 제거 후 종료</li>
+      </ul>
+      <p>이미 시작한 업무 단위를 존중하는 종료 방식이지만, 긴 transaction이 있으면 오래 걸릴 수 있다.</p>
+
+      <h3>shutdown immediate</h3>
+      <ul>
+        <li>트랜잭션 강제 종료 및 rollback 수행 후 종료</li>
+        <li>DBA들이 가장 많이 사용하는 방식</li>
+      </ul>
+      <p>운영 통제성과 정합성의 균형점이다. 너무 기다리지도 않고, abort처럼 거칠지도 않다.</p>
+
+      <h3>shutdown abort</h3>
+      <ul>
+        <li>트랜잭션 강제 종료</li>
+        <li>정상 rollback 절차 없이 종료</li>
+        <li>OS의 kill -9에 가까운 강제 종료</li>
+      </ul>
+      <p>정상 종료가 아니라 사실상 강제 전원 차단에 가깝다. 다음 startup 때 SMON recovery 부담이 커진다.</p>
+
+      <div class="flow">실무 기본 = shutdown immediate
+normal / transactional = 너무 오래 기다릴 수 있음
+abort = 너무 거칠어서 다음 recovery 부담 증가</div>
 
       <div class="warn">
-        <strong>핵심:</strong> DBWR가 아직 안 썼는데 commit이 됐다는 건 Oracle에서는 정상이다. <strong>commit = redo 보장</strong>, <strong>datafile 반영 = 나중</strong> 구조이기 때문이다.
+        <strong>핵심:</strong> abort는 한 번도 쓰면 안 되는 금기라기보다, <strong>정말 안 내려갈 때의 마지막 수단</strong>이다. 하지만 자주 쓰는 환경은 운영 절차가 건강하지 않다는 신호일 수 있다.
       </div>
-
-      <h3>예방 방향</h3>
-      <ul>
-        <li>commit을 너무 잘게 쪼개지 않기</li>
-        <li>redo 경로 I/O를 빠르고 안정적으로 만들기</li>
-        <li>dirty buffer pressure를 줄이기</li>
-        <li>hot block / 경합 구조 완화</li>
-        <li>checkpoint / recovery 범위까지 함께 보기</li>
-      </ul>
     </section>
 
     <section class="section">
-      <div class="badge">추가 질문 정리 · 운영 철학</div>
-      <h2>병목 해소와 무조건적 자원 확대가 아닌, 지속가능한 최적화</h2>
-      <p>좋은 DB 운영은 단순히 자원을 많이 주는 것이 아니라, <strong>제한된 자원 안에서 병목을 해소하고, 정합성과 복구 가능성을 지키는 것</strong>이다.</p>
+      <div class="badge">추가 질문 정리 · 개발자 공지</div>
+      <h2>shutdown immediate를 할 때 개발자에게는 어떻게 고지하나</h2>
+      <p>DB는 혼자 쓰는 게 아니므로 사전 공지가 원칙이다. 공지 없이 shutdown immediate를 실행하면 개발자 입장에서는 진행 중 작업이 날아갈 수 있으므로 사실상 사고로 받아들여질 수 있다.</p>
 
-      <div class="flow">1. 병목 해소 (Performance)
-2. 제한된 자원 내 최적화 (Efficiency)
-3. 데이터 정합성 + 손실 방어 (Reliability)</div>
+      <h3>일반적인 절차</h3>
+      <ol>
+        <li>시간 공지 — 예: 22:00~22:30 점검</li>
+        <li>영향 범위 공지 — 로그인 불가, API 중단, 배치 중지 여부</li>
+        <li>작업 내용 공지 — DB 재기동, 패치, 유지보수 등</li>
+        <li>필요 시 restricted session으로 신규 유입 차단</li>
+        <li>기존 세션 종료 유도 또는 강제 정리</li>
+        <li>shutdown immediate 수행</li>
+      </ol>
 
-      <h3>왜 무조건 자원 늘리기가 답이 아닌가</h3>
-      <p>문제의 상당수는 자원 부족보다 구조 문제에서 온다.</p>
+      <div class="flow">공지
+ ↓
+신규 유입 차단(restrict 가능)
+ ↓
+기존 세션 정리
+ ↓
+shutdown immediate</div>
+
+      <div class="warn">
+        <strong>실무 감각:</strong> <strong>공지 없이 immediate = 사고</strong>다. shutdown immediate는 기술적으로 안전한 종료 옵션이지만, 사용자 트랜잭션은 끊기므로 운영 커뮤니케이션이 필수다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 단계별 장애 진단</div>
+      <h2>startup 실패는 단계별로 무엇을 의심해야 하나</h2>
+
+      <h3>NOMOUNT도 안 됨 → parameter / instance 문제</h3>
+      <div class="flow">instance 자체 생성 실패</div>
+      <h4>주요 원인</h4>
       <ul>
-        <li>commit 남발 → LGWR 병목</li>
-        <li>hot block → 동시성 문제</li>
-        <li>full scan → SQL 문제</li>
-        <li>batch 시간 겹침 → 운영 문제</li>
+        <li>spfile / pfile 없음</li>
+        <li>파라미터 파일 경로 오류</li>
+        <li>파라미터 syntax 오류</li>
+        <li>메모리 부족으로 SGA 할당 실패</li>
+        <li>OS 권한 문제</li>
+      </ul>
+      <h4>실무 대응</h4>
+      <ul>
+        <li>pfile로 강제 startup 시도</li>
+        <li>메모리 설정 축소</li>
+        <li>파라미터 수정</li>
+        <li>spfile에서 pfile 추출 및 복구</li>
+      </ul>
+
+      <h3>MOUNT 못 감 → control file 문제</h3>
+      <div class="flow">control file open 실패</div>
+      <h4>주요 원인</h4>
+      <ul>
+        <li>control file 삭제 또는 경로 오류</li>
+        <li>control file 손상</li>
+        <li>control_files 파라미터 설정 오류</li>
+      </ul>
+      <h4>실무 대응</h4>
+      <ul>
+        <li>control file 복구</li>
+        <li>백업본 restore</li>
+        <li>필요 시 control file recreate</li>
+      </ul>
+
+      <h3>OPEN 못 감 → datafile / recovery 문제</h3>
+      <div class="flow">datafile 또는 recovery 문제</div>
+      <h4>주요 원인</h4>
+      <ul>
+        <li>datafile 없음</li>
+        <li>datafile 손상</li>
+        <li>block corruption / I/O 오류</li>
+        <li>shutdown abort 이후 recovery 필요</li>
+        <li>archive log 부족으로 recovery 불가</li>
+      </ul>
+      <h4>실무 대응</h4>
+      <ul>
+        <li>media recovery 수행</li>
+        <li>archive log 적용</li>
+        <li>datafile restore</li>
       </ul>
 
       <div class="point">
-        <strong>핵심 방향:</strong> “느리다 → 메모리 늘리자”가 아니라, <strong>제한된 자원 안에서 병목을 제거</strong>해야 한다.
+        <strong>진단 루트:</strong> <strong>NOMOUNT 실패 → parameter / memory</strong>, <strong>MOUNT 실패 → control file</strong>, <strong>OPEN 실패 → datafile / recovery</strong>. 이건 DBA의 기본 분리 진단 공식이다.
       </div>
+    </section>
 
-      <h3>병목 해소의 기본 전략</h3>
-      <div class="flow">1. 병목 위치를 찾는다
-2. 병목을 이동시킨다
-3. 병목을 분산시킨다</div>
+    <section class="section">
+      <div class="badge">추가 질문 정리 · 빈번한 장애</div>
+      <h2>실무에서 자주 만나는 실제 문제</h2>
 
-      <p>병목은 제거하는 것보다 다른 곳으로 이동시키는 경우가 많다. 그래서 DBA는 항상 균형을 본다.</p>
+      <h3>1. OPEN 단계 recovery 문제</h3>
+      <div class="flow">shutdown abort 이후
+→ recovery 필요
+→ archive 부족
+→ open 실패</div>
 
-      <h3>지속가능한 최적화</h3>
-      <ul>
-        <li>peak 시간, batch 시간, commit 패턴 같은 부하 예측</li>
-        <li>PGA limit, parallel 제한, session 수 제한 같은 상한 설정</li>
-        <li>OLTP vs Batch 분리, Redo vs Datafile 분리, Temp 분리 같은 격리</li>
-        <li>queue, retry, rate limit 같은 완충 장치</li>
-      </ul>
+      <h3>2. redo / archive 문제</h3>
+      <div class="flow">archive full
+→ redo 처리 막힘
+→ DB 멈춤</div>
+
+      <h3>3. control file 문제</h3>
+      <div class="flow">control file 손상
+→ MOUNT 실패</div>
+
+      <h3>4. parameter 손상 또는 설정 오류</h3>
+      <div class="flow">parameter 문제
+→ NOMOUNT 실패</div>
 
       <div class="warn">
-        <strong>운영 철학:</strong> 목표는 “지금 빠른 시스템”이 아니라 <strong>계속 버티는 시스템</strong>이다.
+        <strong>실무 감각:</strong> startup 실패 중에서 가장 자주 체감하는 건 OPEN 단계의 recovery / archive / redo 문제 쪽이다.
       </div>
     </section>
 
     <section class="section">
-      <div class="badge">추가 질문 정리 · 요즘 환경과 보편 전략</div>
-      <h2>유명하고 보편적인 세팅이 있나</h2>
-      <p>정답 세팅은 없다. 대신 <strong>workload 기반의 보편적 전략</strong>은 있다.</p>
+      <div class="badge">추가 질문 정리 · 예방</div>
+      <h2>archive 부족 / archive full / control file 손상 / parameter 손상을 어떻게 예방하나</h2>
 
-      <h3>DBA가 실제로 먼저 보는 4가지 축</h3>
-      <div class="flow">1. workload (OLTP vs Batch)
-2. 동시 사용자 수
-3. 트랜잭션 패턴 (commit 빈도)
-4. I/O 성능</div>
-
-      <h3>요즘 시대의 방향</h3>
-      <div class="flow">과거: 디스크를 아껴라
-현재: I/O 병목과 동시성 문제를 줄여라</div>
-
-      <p>SSD / NVMe 시대에는 저장공간 자체보다 redo latency, random I/O, cache 효율, 동시성이 더 중요하다.</p>
-
-      <div class="point">
-        <strong>실무 우선순위:</strong> <strong>용량 &lt; 성능 &lt; 안정성(정합성)</strong>
-      </div>
-
-      <h3>보편적인 전략 예시</h3>
+      <h3>archive 부족 / archive full</h3>
       <ul>
-        <li><strong>redo log</strong>: 너무 작으면 log switch 폭증, 너무 크면 recovery 부담 증가 → 보통 switch가 10~20분 간격이 되도록 조정</li>
-        <li><strong>commit 패턴</strong>: 너무 자주 하면 LGWR 병목, 너무 늦게 하면 undo / lock 증가</li>
-        <li><strong>SGA vs PGA</strong>: OLTP는 SGA 중심, Batch는 PGA 중심</li>
-        <li><strong>I/O 분리</strong>: redo, datafile, temp, archive를 분리해서 서로 영향 줄이기</li>
+        <li>RMAN으로 일정 기간 지난 archive 자동 삭제</li>
+        <li>백업 후 삭제 원칙 유지</li>
+        <li>archive 디스크 분리</li>
+        <li>FRA(Fast Recovery Area) 설정</li>
+        <li>사용량 모니터링</li>
       </ul>
-    </section>
+      <div class="flow">archive 문제는 기술 문제가 아니라
+운영 관리 실패인 경우가 많다</div>
 
-    <section class="section">
-      <div class="badge">추가 질문 정리 · 빈번한 병목</div>
-      <h2>실무에서 가장 자주 신경 써야 하는 속도 저하 이슈</h2>
-      <p>“가장 많고 가장 신경 써야 하는 것”을 현실적인 우선순위로 정리하면 다음과 같다.</p>
-
-      <h3>1위: log file sync (commit 병목)</h3>
+      <h3>control file 손상</h3>
       <ul>
-        <li>commit 너무 자주</li>
-        <li>redo 디스크 느림</li>
-        <li>LGWR latency</li>
+        <li>다중 control file 구성</li>
+        <li>서로 다른 디스크 / LUN / 스토리지에 분산</li>
+        <li>control file autobackup 설정</li>
+        <li>alert log 감시</li>
       </ul>
-      <p>사용자 체감은 “저장 버튼 누르면 느림”, “API 응답이 끊김”이다.</p>
+      <div class="flow">control file은 반드시 여러 개
+이건 선택이 아니라 기본값</div>
 
-      <h3>2위: 동시성 경합 (hot block / row lock)</h3>
+      <h3>parameter file 손상</h3>
       <ul>
-        <li>같은 데이터 계속 update</li>
-        <li>sequence / index hotspot</li>
-        <li>특정 row 집중</li>
+        <li>spfile + pfile 둘 다 유지</li>
+        <li>파라미터 변경 이력 관리</li>
+        <li>가능한 alter system 사용, 직접 파일 수정 최소화</li>
+        <li>긴급 대응용 pfile 확보</li>
       </ul>
-      <p>CPU가 낮아도 특정 기능만 느린 식으로 드러날 수 있다.</p>
+      <div class="flow">parameter는 작지만 DB 생명줄
+항상 백업 2개 이상 유지</div>
 
-      <h3>3위: Buffer Cache 부족</h3>
+      <h3>공통 핵심 전략</h3>
       <ul>
-        <li>SGA가 작음</li>
-        <li>full scan 많음</li>
-        <li>캐시 적중률이 낮음</li>
-      </ul>
-      <p>physical read 증가와 I/O 지연으로 이어진다.</p>
-
-      <h3>4위: PGA 폭발 (batch / parallel)</h3>
-      <ul>
-        <li>sort 많음</li>
-        <li>hash join 많음</li>
-        <li>parallel 실행</li>
-      </ul>
-
-      <h3>5위: dirty buffer pressure → free buffer waits</h3>
-      <ul>
-        <li>update 많음</li>
-        <li>DBWR 느림</li>
-        <li>write I/O 병목</li>
-      </ul>
-
-      <h3>6위: checkpoint 문제</h3>
-      <ul>
-        <li>checkpoint 너무 드묾</li>
-        <li>redo 많음</li>
-      </ul>
-      <p>restart recovery 시간 증가, I/O burst와 연결된다.</p>
-
-      <div class="warn">
-        <strong>실무 감각:</strong> 가장 흔한 병목은 보통 <strong>commit → LGWR</strong>, <strong>동시성 경합</strong>, <strong>I/O 부족</strong> 쪽에서 먼저 체감된다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">추가 질문 정리 · 데이터 손실 방어</div>
-      <h2>정합성 유지와 데이터 손실 방어</h2>
-      <p>Oracle의 기본 철학은 <strong>redo가 살아 있으면 데이터는 복구 가능하다</strong>는 것이다.</p>
-
-      <div class="flow">Redo Log → 반드시 먼저 기록 (WAL)
-Archive Log → 백업 / 이후 복구 근거
-Checkpoint → 기준점
-Undo → rollback / consistent read</div>
-
-      <h3>위험 케이스 해석</h3>
-      <ul>
-        <li><strong>redo 손실</strong> → 복구 불가 가능성</li>
-        <li><strong>commit 전에 crash</strong> → redo가 보장되지 않았으므로 반영 안 됨</li>
-        <li><strong>commit 후 datafile 미반영</strong> → redo로 복구 가능</li>
+        <li>단일 장애 지점 제거</li>
+        <li>자동화</li>
+        <li>모니터링</li>
+        <li>복구 시나리오 테스트</li>
       </ul>
 
       <div class="point">
-        <strong>핵심 문장:</strong> <strong>정합성은 datafile이 아니라 redo가 지킨다.</strong>
+        <strong>공통 철학:</strong> <strong>복제 + 자동화 + 모니터링 + 복구 테스트</strong>. DBA의 목표는 문제를 완전히 막는 것이 아니라, 문제가 생겨도 복구 가능하게 만드는 것이다.
       </div>
-
-      <h3>읽기 정합성</h3>
-      <div class="flow">SELECT → consistent read (undo 사용)
-UPDATE → current read</div>
-
-      <p>읽는 동안 데이터가 바뀌어도 일관된 결과를 보장해야 하므로, Oracle은 undo와 SCN 기반으로 consistent read를 제공한다.</p>
     </section>
 
     <section class="section">
       <div class="badge">3단계 · 전체 흐름 연결</div>
-      <h2>19~25페이지와 추가 질문까지 하나의 운영 흐름으로 묶기</h2>
+      <h2>26~33페이지와 추가 질문까지 하나의 운영 흐름으로 묶기</h2>
 
-      <div class="flow">User Process
+      <div class="flow">DB 기동
   ↓
-Server Process
-  ├─ SQL 파싱 / 최적화 / 실행
-  ├─ Buffer Cache에서 블록 읽기 / 수정
-  └─ Redo Log Buffer에 변경 이력 기록
+parameter file 읽기
   ↓
-LGWR
-  └─ Redo Log File에 먼저 기록
+SGA + background process 생성
   ↓
-DBWR
-  └─ Dirty Buffer를 나중에 Datafile에 기록
-  ↓
-CKPT
-  └─ 어느 시점까지 동기화됐는지 SCN / RBA 기준 기록
-  ↓
-장애 발생 시
-SMON
-  ├─ Checkpoint 이후 redo로 roll forward
-  └─ commit 안 된 작업은 undo로 rollback
-  ↓
-비정상 종료 세션 정리는 PMON
+NOMOUNT
 
-운영 관점 추가
+NOMOUNT
   ↓
-commit 많다 → LGWR 병목
-update 많다 → dirty buffer pressure
-같은 데이터 집중 → hot block / lock
-redo 많다 → checkpoint / recovery 부담 증가
+control file open
   ↓
-DBA는
-병목 해소 + 자원 상한 관리 + 정합성 유지
-를 동시에 고려한다</div>
+datafile / redo log file 구조 파악
+  ↓
+MOUNT
+
+MOUNT
+  ↓
+필요 시 recovery 판단 / 수행
+  ↓
+datafile open
+  ↓
+OPEN
+
+운영 중
+  ↓
+read only / restrict 같은 제어 모드 사용 가능
+
+종료 시
+  ↓
+사용자 접근 종료
+  ↓
+DB close
+  ↓
+mount 해제
+  ↓
+instance 종료
+
+문제 발생 시
+  ↓
+NOMOUNT 실패 → parameter / memory
+MOUNT 실패 → control file
+OPEN 실패 → datafile / recovery</div>
 
       <div class="point">
-        <strong>즉:</strong> Oracle은 <strong>실행, 기록, 지연쓰기, 기준점 관리, 복구, 자원 정리</strong>를 프로세스별로 나눠서 운영하고, DBA는 그 전체 흐름이 무너지지 않게 균형을 잡는 사람이다.
+        <strong>핵심:</strong> 앞에서 배운 SGA, control file, checkpoint, SMON, recovery 개념이 전부 startup / shutdown 흐름 안으로 들어온다. 이 범위는 Oracle 내부 구조를 실제 운영 절차에 꽂아 넣는 장이다.
       </div>
     </section>
 
     <section class="section">
       <div class="badge">4단계 · 실무 포인트</div>
-      <h2>이 범위에서 실제 장애 / 성능 문제로 어떻게 이어지는가</h2>
-
-      <h3>1. commit 지연</h3>
+      <h2>이 범위에서 실제 운영 판단으로 이어지는 지점</h2>
       <ul>
-        <li>LGWR / redo I/O / log file sync 경로를 먼저 본다.</li>
+        <li><strong>OPEN이 중요하다</strong> — OPEN까지 못 가면 DB는 서비스 불가 상태다.</li>
+        <li><strong>startup 문제는 어느 단계에서 멈췄는지로 본다</strong> — 장애 분리 진단의 기본이다.</li>
+        <li><strong>MOUNT는 recovery와 깊게 연결된다</strong> — control file을 읽어야 recovery 필요 여부를 판단할 수 있다.</li>
+        <li><strong>shutdown immediate가 실무 기본</strong> — 운영 통제성과 정합성의 균형점이다.</li>
+        <li><strong>abort를 자주 쓰는 환경은 건강하지 않다</strong> — 다음 recovery 부담이 커진다.</li>
+        <li><strong>read only / restrict는 운영 제어 도구</strong> — 자동 루틴이 아니라, 상황이 생길 때 DBA가 수동으로 사용하는 기본 도구다.</li>
       </ul>
-
-      <h3>2. free buffer waits</h3>
-      <ul>
-        <li>dirty buffer pressure와 DBWR 처리 속도를 의심한다.</li>
-      </ul>
-
-      <h3>3. recovery 시간 증가</h3>
-      <ul>
-        <li>checkpoint 기준과 redo 범위를 함께 본다.</li>
-      </ul>
-
-      <h3>4. 같은 데이터 집중 업데이트</h3>
-      <ul>
-        <li>row lock contention, hot block, buffer busy waits를 의심한다.</li>
-      </ul>
-
-      <h3>5. 자원 무제한 사용</h3>
-      <ul>
-        <li>PGA 무제한 → 메모리 폭발</li>
-        <li>세션 무제한 → CPU / context switching 폭증</li>
-        <li>commit 남발 → LGWR 병목</li>
-      </ul>
-
-      <div class="warn">
-        <strong>가장 중요한 운영 철학:</strong> 좋은 DB는 “빠른 DB”가 아니라 <strong>무너지지 않는 DB</strong>다. 성능 때문에 정합성이 깨지면 끝이다.
-      </div>
     </section>
 
     <section class="section">
       <div class="badge">5단계 · 핵심 요약</div>
       <h2>이번 범위 전체 요약</h2>
-      <div class="summary">19~25페이지는 Oracle의 운영 프로세스 협업 구간이다.
+      <div class="summary">26~33페이지는 Oracle의 기동/종료 운영 절차다.
 
-Server Process가 SQL을 실행하고,
-LGWR가 redo를 먼저 디스크에 남기고,
-DBWR가 dirty buffer를 나중에 datafile에 내리며,
-CKPT가 recovery 기준점을 기록하고,
-장애가 나면 SMON이 redo / undo로 instance recovery를 수행하고,
-죽은 세션 뒤처리는 PMON이 맡는다.
+startup은
+parameter file → instance 생성(NOMOUNT)
+→ control file 확인(MOUNT)
+→ datafile open(OPEN)
+순서로 진행된다.
 
-checkpoint는 redo 자체의 상태를 기록하는 것이라기보다,
-datafile이 redo의 어느 시점까지 반영됐는지를 나타내는 기준점이다.
+즉 Oracle은
+“메모리와 프로세스를 먼저 만들고,
+DB 파일 지도를 읽고,
+마지막에 실제 데이터를 연다.”
 
-RBA는 redo log 안의 물리적 위치이고,
-SCN은 논리적 시점이다.
+OPEN은 메모리에 다 올렸다는 뜻이 아니라,
+파일 구조와 상태와 정합성을 모두 확인해
+사용자가 SQL을 실행해도 되는 상태를 뜻한다.
 
-checkpoint 정보는 control file header와 data file header에 기록되며,
-이 구조 덕분에 startup / recovery 때 Oracle이 어디서부터 복구할지 판단할 수 있다.
+read only / restrict는 자동으로 수행되는 디폴트가 아니라,
+DBA가 필요할 때 수동으로 사용하는 운영 제어 도구다.
 
-DBWR와 LGWR 타이밍은 평소 직접 제어 대상이라기보다
-장애 분석과 성능 병목 해석의 핵심 지식이다.
+shutdown은 startup의 역순이며,
+실무 기본은 shutdown immediate다.
 
-같은 데이터에 짧은 시간 동안 여러 변경과 commit이 몰리면
-정합성 자체는 redo가 지켜주지만,
-LGWR 병목, redo 폭증, dirty buffer pressure,
-recovery 범위 증가, hot block 경합이 위험해진다.
+normal / transactional은 너무 오래 기다릴 수 있고,
+abort는 너무 거칠어서 다음 startup 때 recovery 부담이 커진다.
 
-정해진 최적 세팅은 없다.
-대신 workload 기반으로 균형을 맞춘다.
+startup 실패는 단계별로 원인이 다르다:
+NOMOUNT → parameter / memory 문제
+MOUNT → control file 문제
+OPEN → datafile / recovery 문제
 
-요즘은 저장공간 자체보다
-redo latency, random I/O, 동시성이 더 중요하다.
+archive full, control file 손상, parameter 손상 같은 문제는
+복제 + 자동화 + 모니터링 + 복구 테스트로 예방한다.
 
-가장 흔한 병목은
-1) commit → LGWR
-2) 동시성 경합
-3) I/O 부족
-쪽에서 먼저 나타난다.
-
-좋은 DB는 단순히 빠른 DB가 아니라,
-병목을 통제하고 자원 상한을 두고
-정합성과 복구 가능성을 지키는 DB다.</div>
+이 범위를 이해하면
+Oracle 내부 구조가 실제 운영 절차 안에서 어떻게 작동하는지 보이기 시작한다.</div>
     </section>
   </div>
 </body>

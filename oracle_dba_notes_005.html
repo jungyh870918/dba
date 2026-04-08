@@ -1,0 +1,506 @@
+<!-- oracle_dba_notes_037_048.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 005</title>
+  <style>
+    :root{
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#1d4ed8;
+      --accent-soft:#eff6ff;
+      --warn:#fff7ed;
+      --warn-line:#fed7aa;
+      --dark:#111827;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
+      line-height:1.78;
+      padding:40px 20px 80px;
+    }
+    .wrap{max-width:1080px;margin:0 auto}
+    .hero{
+      background:linear-gradient(135deg,#0f172a,#1e3a8a);
+      color:#fff;
+      border-radius:24px;
+      padding:36px;
+      margin-bottom:24px;
+      box-shadow:0 20px 40px rgba(15,23,42,.18);
+    }
+    .hero h1{margin:0 0 10px;font-size:34px;line-height:1.3}
+    .hero p{margin:0;color:rgba(255,255,255,.88)}
+    .section{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:28px;
+      margin-bottom:20px;
+      box-shadow:0 8px 24px rgba(15,23,42,.04);
+    }
+    .badge{
+      display:inline-block;
+      padding:6px 12px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:13px;
+      font-weight:800;
+      margin-bottom:14px;
+    }
+    h2{margin:0 0 14px;font-size:28px;line-height:1.35}
+    h3{margin:22px 0 10px;font-size:20px;line-height:1.45}
+    p{margin:10px 0}
+    ul,ol{margin:10px 0;padding-left:22px}
+    li{margin:6px 0}
+    .flow,.summary,.sql{
+      background:var(--dark);
+      color:#f9fafb;
+      border-radius:16px;
+      padding:16px 18px;
+      white-space:pre-wrap;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      overflow-x:auto;
+      margin:14px 0;
+    }
+    .point{
+      background:#f8fafc;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px 18px;
+      margin:14px 0;
+    }
+    .warn{
+      background:var(--warn);
+      border:1px solid var(--warn-line);
+      border-radius:16px;
+      padding:16px 18px;
+      margin:14px 0;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+    }
+    .card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+      background:#fff;
+    }
+    .muted{color:var(--muted);font-size:14px}
+    @media (max-width:760px){
+      body{padding:24px 14px 60px}
+      .grid{grid-template-columns:1fr}
+      .hero h1{font-size:28px}
+      h2{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 037-048</h1>
+      <p>PDF 37~48페이지의 파라미터 파일 내용 + 이 범위와 연결되는 저장 구조, SCN, undo, consistent read까지 함께 정리</p>
+    </header>
+
+    <section class="section">
+      <div class="badge">전체 지도</div>
+      <h2>이 범위가 전체 구조에서 차지하는 위치</h2>
+      <p>이 범위는 두 축이 겹친다.</p>
+      <div class="flow">A. PDF 37~48의 직접 본문
+→ parameter file / v$parameter / pfile / spfile / scope / modifiable 속성 / OS 환경변수
+
+B. 이 범위와 연결되는 학습 흐름
+→ block / extent / segment / row 저장 구조
+→ SCN / undo / consistent read / snapshot too old</div>
+      <div class="point">
+        <strong>읽는 방법:</strong> PDF 본문은 파라미터 관리가 중심이고, 우리가 대화로 확장한 핵심은 “이 파라미터들이 실제로 메모리·undo·기동·운영과 어떻게 연결되는가”다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · 파라미터 개요</div>
+      <h2>파라미터 파일은 Oracle 인스턴스를 여는 첫 관문이다</h2>
+      <p>파라미터 파일은 Oracle 서버의 각종 옵션을 설정하며, 인스턴스가 기동되는 시점에 읽힌다.</p>
+
+      <h3>기본 경로</h3>
+      <ul>
+        <li><strong>Unix 계열</strong> : <code>$ORACLE_HOME/dbs</code></li>
+        <li><strong>Windows</strong> : <code>$ORACLE_HOME/database</code></li>
+      </ul>
+
+      <div class="flow">parameter file
+→ instance 생성
+→ SGA / background process 기동
+→ NOMOUNT 단계 성립</div>
+
+      <div class="point">
+        <strong>실무 의미:</strong> 파라미터 파일이 깨지면 NOMOUNT 자체가 안 된다. 즉, DB를 열기 이전의 “엔진 생성” 단계가 실패한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · 파라미터 변경 성격</div>
+      <h2>온라인 변경 가능 / 불가능 파라미터</h2>
+      <p>파라미터는 온라인 중 바로 바뀌는 것과, DB 재기동 후 반영되는 것이 나뉜다.</p>
+
+      <h3>온라인 중 변경 가능한 파라미터</h3>
+      <ul>
+        <li>DB 기동 중 즉시 반영 가능</li>
+        <li><code>alter system set 파라미터 = 값 scope=both</code></li>
+      </ul>
+
+      <h3>온라인 중 변경 불가능한 파라미터</h3>
+      <ul>
+        <li>파일에는 반영되지만 DB 재기동 후 적용</li>
+        <li><code>alter system set 파라미터 = 값 scope=spfile</code></li>
+      </ul>
+
+      <div class="warn">
+        <strong>중요:</strong> 메모리 관련 파라미터는 즉시 반영이 가능하더라도, <strong>실무에서는 재기동 후 안정 상태로 확인하는 것</strong>을 선호한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · v$parameter</div>
+      <h2>v$parameter로 파라미터를 읽을 때 봐야 하는 컬럼</h2>
+
+      <div class="sql">select name, value, isdefault, isses_modifiable, issys_modifiable
+from v$parameter
+where name in ('log_archive_start', 'sga_target', 'workarea_size_policy');</div>
+
+      <h3>예시로 나온 파라미터</h3>
+      <ul>
+        <li><strong>sga_target</strong> : 예시값 1610612736</li>
+        <li><strong>log_archive_start</strong> : 예시값 FALSE</li>
+        <li><strong>workarea_size_policy</strong> : 예시값 AUTO</li>
+      </ul>
+
+      <h3>TYPE 컬럼 의미</h3>
+      <ul>
+        <li>1 = boolean</li>
+        <li>2 = string</li>
+        <li>3 = integer</li>
+        <li>4 = parameter file</li>
+        <li>5 = reserved</li>
+        <li>6 = big integer</li>
+      </ul>
+
+      <h3>ISSES_MODIFIABLE</h3>
+      <p><code>ALTER SESSION</code>으로 변경 가능한지 여부다.</p>
+      <ul>
+        <li>true : 변경 가능</li>
+        <li>false : 변경 불가능</li>
+      </ul>
+
+      <h3>ISSYS_MODIFIABLE</h3>
+      <p><code>ALTER SYSTEM</code>으로 변경 가능한지 여부다.</p>
+      <ul>
+        <li><strong>IMMEDIATE</strong> : 수정 즉시 적용</li>
+        <li><strong>DEFERRED</strong> : 변경은 가능하지만 새로 로그인한 세션부터 적용</li>
+        <li><strong>FALSE</strong> : scope=spfile만 가능</li>
+      </ul>
+
+      <h3>ISINSTANCE_MODIFIED</h3>
+      <ul>
+        <li>MODIFIED : ALTER SESSION으로 수정</li>
+        <li>SYSTEM_MOD : ALTER SYSTEM으로 수정</li>
+        <li>FALSE : 수정되지 않음</li>
+      </ul>
+
+      <h3>ISPDB_MODIFIABLE</h3>
+      <p>CDB와 PDB를 분리해 설정 가능한지 여부다.</p>
+      <ul>
+        <li>TRUE : 가능</li>
+        <li>FALSE : 불가능</li>
+      </ul>
+
+      <h3>ISADJUSTED</h3>
+      <p>Oracle이 더 적절한 값으로 조정했는지 여부다. 대부분 FALSE다.</p>
+
+      <h3>ISDEPRECATED</h3>
+      <ul>
+        <li>TRUE : 더 이상 권장되지 않음</li>
+        <li>FALSE : 사용 가능</li>
+      </ul>
+
+      <h3>ISINSTANCE_MODIFIABLE (RAC 관점)</h3>
+      <ul>
+        <li>true : 인스턴스별로 다를 수 있음</li>
+        <li>false : RAC 전체에서 같은 값을 권장</li>
+      </ul>
+
+      <div class="point">
+        <strong>실무 핵심:</strong> DBA는 파라미터 값을 “이름과 값”만 보는 게 아니라, <strong>어디서 바뀌는지(세션/시스템), 언제 반영되는지(즉시/재기동), 멀티테넌트에서 분리 가능한지</strong>까지 함께 본다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · 변경 방법</div>
+      <h2>파라미터 변경 방법 3가지</h2>
+      <div class="sql">-- 서버 전체 적용
+alter system set 파라미터 = 값;
+
+-- 자신의 세션만 적용
+alter session set 파라미터 = 값;
+
+-- 특정 SQL에만 적용
+select /*+ opt_param('파라미터','value') */ ...
+from ...;</div>
+
+      <div class="warn">
+        <strong>실무 의미:</strong> 파라미터는 “전체 시스템에 강하게 박는 방식”만 있는 게 아니다. <strong>세션 단위, SQL 단위로 국소적으로 테스트</strong>할 수 있어야 안전하게 운영할 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · PFILE / SPFILE</div>
+      <h2>PFILE과 SPFILE 차이</h2>
+
+      <div class="grid">
+        <div class="card">
+          <h3>PFILE</h3>
+          <ul>
+            <li>Text file</li>
+            <li>9i 이전 기본</li>
+            <li>사용자가 editor로 직접 수정 가능</li>
+            <li>파일명 지정 시 읽힘</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>SPFILE</h3>
+          <ul>
+            <li>Binary file</li>
+            <li>9i부터 관리</li>
+            <li>기본으로 읽힘</li>
+            <li>alter system set으로 편집</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>기본 파일명과 위치</h3>
+      <ul>
+        <li><strong>Windows PFILE</strong> : <code>$ORACLE_HOME/database/init인스턴스명.ora</code></li>
+        <li><strong>Windows SPFILE</strong> : <code>$ORACLE_HOME/database/spfile인스턴스명.ora</code></li>
+        <li><strong>Unix PFILE</strong> : <code>$ORACLE_HOME/dbs/init인스턴스명.ora</code></li>
+        <li><strong>Unix SPFILE</strong> : <code>$ORACLE_HOME/dbs/spfile인스턴스명.ora</code></li>
+      </ul>
+
+      <h3>파일 생성</h3>
+      <div class="sql">-- spfile로 기동 중일 때 pfile 생성
+create pfile from spfile;
+
+-- pfile로 기동 후 spfile 생성
+startup pfile='C:\app\seo\product\11.2.0\dbhome_1\database\initORCL.ora';
+create spfile from pfile;</div>
+
+      <div class="point">
+        <strong>실무 핵심:</strong> <strong>spfile만 믿지 말고 pfile 백업본을 반드시 유지</strong>해야 한다. 파라미터 파일 손상 시 NOMOUNT도 못 가기 때문이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">PDF 직접 내용 · scope</div>
+      <h2>scope = memory | spfile | both 의 의미</h2>
+      <div class="sql">alter system set parameter = value [scope=memory | spfile | both];</div>
+      <ul>
+        <li><strong>memory</strong> : 현재 서버에만 적용, 재기동 후 원래 값으로 기동</li>
+        <li><strong>spfile</strong> : spfile에만 적용, DB 재기동 후 반영</li>
+        <li><strong>both</strong> : 서버에도 적용되고, spfile에도 기록</li>
+      </ul>
+
+      <h3>undo_retention 예제</h3>
+      <div class="sql">select name, value, issys_modifiable
+from v$parameter
+where name = 'undo_retention';
+
+-- 예시 결과
+undo_retention = 3600
+ISSYS_MODIFIABLE = IMMEDIATE
+
+alter system set undo_retention = 900 scope=both;
+
+alter system set undo_retention = 600 scope=spfile;</div>
+
+      <p><code>scope=spfile</code>로 바꾸면 현재 <code>v$parameter</code>에서 보이는 값은 그대로고, 재기동 후에야 600이 반영된다.</p>
+
+      <div class="warn">
+        <strong>실무 핵심:</strong> 많은 사고가 “값을 바꿨다고 생각했는데 현재 메모리에는 안 바뀌어 있는 상태”에서 나온다. <strong>scope를 정확히 이해해야 한다.</strong>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">환경변수</div>
+      <h2>반드시 기억해야 할 환경변수</h2>
+      <ul>
+        <li><strong>$ORACLE_HOME</strong> : Oracle 바이너리와 기본 파일들이 위치하는 홈 디렉터리</li>
+        <li><strong>$ORACLE_SID</strong> : 어떤 인스턴스에 접속하고 기동할지 결정하는 식별자</li>
+      </ul>
+
+      <div class="flow">$ORACLE_HOME
+→ pfile / spfile 기본 위치 결정
+→ sqlplus / startup / listener 관련 경로 해석에 연결
+
+$ORACLE_SID
+→ 어떤 인스턴스를 대상으로 startup / shutdown / local 접속할지 결정</div>
+
+      <div class="point">
+        <strong>실무 의미:</strong> startup 문제의 초입에서 가장 먼저 확인해야 하는 것이 환경변수다. 특히 ORACLE_SID가 틀리면 엉뚱한 인스턴스를 만지거나, 기동 자체가 실패할 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">파라미터와 메모리 연결</div>
+      <h2>파라미터가 왜 중요한가: 결국 SGA / PGA / startup / 작업 방식과 연결된다</h2>
+
+      <h3>sga_target</h3>
+      <p>SGA 전체를 자동 메모리 관리 관점에서 크게 잡는 기준이다. Shared Pool, Buffer Cache 같은 공용 캐시 구조와 직결된다.</p>
+      <div class="flow">sga_target
+→ Shared Pool / Buffer Cache / Log Buffer 등
+→ cache hit, physical read, library cache pressure와 연결</div>
+
+      <h3>workarea_size_policy</h3>
+      <p>sort / hash 같은 작업 영역을 자동으로 관리할지 결정한다. AUTO이면 Oracle이 PGA 작업 영역을 자동 조정한다.</p>
+      <div class="flow">workarea_size_policy = AUTO
+→ sort / hash / workarea
+→ PGA 사용 패턴과 연결</div>
+
+      <h3>undo_retention</h3>
+      <p>undo를 얼마나 유지하려 하는지에 대한 정책이다. consistent read, snapshot too old, 긴 조회, batch 충돌과 직접 연결된다.</p>
+
+      <div class="warn">
+        <strong>중요:</strong> 파라미터는 단순 설정값이 아니라, <strong>메모리 구조, 일관성 보장, startup, 운영 통제, 장애 대응</strong>을 모두 묶는 제어점이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">확장 학습 · 저장 구조</div>
+      <h2>우리가 이 범위에서 함께 확장한 저장 구조 핵심</h2>
+      <div class="flow">Tablespace
+ ↓
+Datafile
+ ↓
+Segment
+ ↓
+Extent
+ ↓
+Block
+ ↓
+Row</div>
+
+      <ul>
+        <li><strong>Block</strong> : I/O 최소 단위</li>
+        <li><strong>Extent</strong> : Block 묶음</li>
+        <li><strong>Segment</strong> : table / index 같은 객체의 저장 영역</li>
+        <li><strong>Tablespace</strong> : 논리 저장 단위</li>
+      </ul>
+
+      <div class="point">
+        <strong>중요:</strong> Segment는 파일이 아니라 <strong>extent들의 집합</strong>이다. 따라서 하나의 segment는 여러 datafile에 걸쳐 존재할 수 있고, 하나의 datafile 안에는 여러 segment가 공존할 수 있다.
+      </div>
+
+      <div class="flow">Segment = Extent들의 모음
+Extent는 각각 특정 datafile에 속함
+
+즉
+Segment
+= Extent1(datafile1)
++ Extent2(datafile2)
++ Extent3(datafile3)</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">확장 학습 · Undo 핵심 요약판</div>
+      <h2>이 페이지 안의 undo 섹션은 본문보다 압축 정리다</h2>
+      <p>앞서 별도 HTML에서 undo를 깊게 다뤘지만, 이 범위와 연결되는 핵심만 여기에도 그대로 넣는다.</p>
+
+      <h3>왜 undo가 필요한가</h3>
+      <p>SELECT가 쿼리 시작 시점 기준으로 일관된 결과를 보게 하기 위해서다. rollback 용도도 있지만, 더 본질적으로는 consistent read용이다.</p>
+
+      <h3>SCN과 비교</h3>
+      <ul>
+        <li><strong>Query SCN</strong> : 내가 보고 싶은 시점</li>
+        <li><strong>Block SCN</strong> : block이 마지막으로 바뀐 시점</li>
+      </ul>
+
+      <div class="flow">Block SCN > Query SCN
+→ 현재 block은 미래 상태
+→ undo를 따라가며 과거 상태 복원</div>
+
+      <h3>undo에 저장되는 것</h3>
+      <ul>
+        <li>before image</li>
+        <li>이전 undo 위치(pointer)</li>
+        <li>트랜잭션 / SCN 관련 정보</li>
+      </ul>
+
+      <h3>undo chain</h3>
+      <p>Oracle은 과거 버전을 통째로 저장하는 게 아니라, 현재 상태와 undo chain을 이용해 필요할 때 과거를 만든다.</p>
+
+      <h3>ORA-01555</h3>
+      <p>필요한 시점까지 따라가야 할 undo chain 중간이 이미 덮어쓰기되어 복원 경로가 끊긴 상태다.</p>
+
+      <div class="warn">
+        <strong>핵심:</strong> ORA-01555는 단순히 undo가 부족한 것이 아니라, <strong>필요한 과거 시점까지 되돌리는 체인이 중간에서 끊긴 상태</strong>다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">실무 의미</div>
+      <h2>이 범위에서 DBA가 실제로 가져가야 하는 감각</h2>
+      <ul>
+        <li>파라미터는 “값”이 아니라 <strong>언제, 어디서, 어떻게 반영되는지</strong>를 같이 봐야 한다.</li>
+        <li><strong>scope 오해</strong>는 기동 후 값 불일치 사고로 이어진다.</li>
+        <li><strong>ORACLE_HOME / ORACLE_SID</strong>는 startup / local 접속 / 파일 경로 해석의 출발점이다.</li>
+        <li><strong>sga_target</strong>은 SGA 캐시 구조와 연결된다.</li>
+        <li><strong>workarea_size_policy</strong>는 sort / hash / PGA와 연결된다.</li>
+        <li><strong>undo_retention</strong>은 undo / consistent read / ORA-01555와 연결된다.</li>
+        <li>pfile / spfile 전환 절차를 모르면 parameter 손상 시 NOMOUNT도 못 갈 수 있다.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="badge">최종 요약</div>
+      <h2>37~48페이지와 확장 개념을 한 줄로 묶으면</h2>
+      <div class="summary">PDF 37~48페이지의 본문 중심은 파라미터 파일이다.
+
+핵심은
+파라미터가 단순 설정값이 아니라
+instance 생성, 메모리 구조, startup, 세션/시스템 반영 범위,
+멀티테넌트 적용 범위, 운영 중 변경 가능 여부를 제어하는
+Oracle의 출발점이라는 점이다.
+
+v$parameter에서는
+isdefault, isses_modifiable, issys_modifiable,
+ispdb_modifiable, isadjusted, isdeprecated 같은 속성을 함께 봐야 한다.
+
+PFILE은 text,
+SPFILE은 binary이며,
+실무에서는 spfile만 믿지 말고 pfile 백업을 반드시 유지해야 한다.
+
+scope=memory / spfile / both는
+현재 반영과 재기동 후 반영을 나누는 핵심 개념이다.
+
+이 범위와 연결되는 확장 개념으로,
+데이터 저장 구조는
+Tablespace → Datafile → Segment → Extent → Block → Row 이고,
+Undo는 consistent read를 위해 과거 상태를 재구성하는 핵심 구조다.
+
+즉 이 범위의 본질은
+“Oracle은 파라미터로 기동되고,
+block 단위로 저장되며,
+SCN과 undo로 시간 일관성을 유지한다”
+는 데 있다.</div>
+    </section>
+  </div>
+</body>
+</html>
