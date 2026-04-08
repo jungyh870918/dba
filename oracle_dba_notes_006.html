@@ -1,632 +1,585 @@
 <!-- oracle_dba_notes_006.html -->
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oracle DBA 학습 노트 006</title>
-  <style>
-    :root {
-      --bg: #f7f8fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --accent: #1d4ed8;
-      --accent-soft: #eff6ff;
-      --warn-soft: #fff7ed;
-      --warn-line: #fed7aa;
-      --dark: #111827;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 40px 20px 80px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
-      line-height: 1.78;
-    }
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-    }
-    .hero {
-      background: linear-gradient(135deg, #0f172a, #1e3a8a);
-      color: #fff;
-      border-radius: 24px;
-      padding: 36px;
-      margin-bottom: 24px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
-    }
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: 34px;
-      line-height: 1.3;
-    }
-    .hero p {
-      margin: 0;
-      color: rgba(255,255,255,0.86);
-    }
-    .nav {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px 18px;
-      margin-bottom: 20px;
-    }
-    .nav a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 700;
-    }
-    .section {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 28px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-    }
-    .badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 14px;
-    }
-    h2 {
-      margin: 0 0 14px;
-      font-size: 28px;
-      line-height: 1.35;
-    }
-    h3 {
-      margin: 24px 0 10px;
-      font-size: 20px;
-      line-height: 1.45;
-    }
-    p { margin: 10px 0; }
-    ul, ol {
-      margin: 10px 0;
-      padding-left: 22px;
-    }
-    li { margin: 6px 0; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
-      background: #fff;
-    }
-    .flow, .summary {
-      background: var(--dark);
-      color: #f9fafb;
-      border-radius: 16px;
-      padding: 16px 18px;
-      white-space: pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      overflow-x: auto;
-      margin: 14px 0;
-    }
-    .point {
-      background: #f8fafc;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px 18px;
-      margin: 14px 0;
-    }
-    .warn {
-      background: var(--warn-soft);
-      border: 1px solid var(--warn-line);
-      border-radius: 16px;
-      padding: 16px 18px;
-      margin: 14px 0;
-    }
-    .muted {
-      color: var(--muted);
-      font-size: 14px;
-    }
-    @media (max-width: 760px) {
-      body { padding: 24px 14px 60px; }
-      .grid { grid-template-columns: 1fr; }
-      .hero h1 { font-size: 28px; }
-      h2 { font-size: 24px; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oracle DBA 학습 노트 006</title>
+    <style>
+        :root {
+            --bg: #f7f8fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --accent: #1d4ed8;
+            --accent-soft: #eff6ff;
+            --warn-soft: #fff7ed;
+            --warn-line: #fed7aa;
+            --dark: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px 80px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+            line-height: 1.78;
+        }
+
+        .wrap {
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: #fff;
+            border-radius: 24px;
+            padding: 36px;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+        }
+
+        .hero h1 {
+            margin: 0 0 10px;
+            font-size: 34px;
+            line-height: 1.3;
+        }
+
+        .hero p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.86);
+        }
+
+        .nav {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+        }
+
+        .nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: 28px;
+            line-height: 1.35;
+        }
+
+        h3 {
+            margin: 24px 0 10px;
+            font-size: 20px;
+            line-height: 1.45;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        ul,
+        ol {
+            margin: 10px 0;
+            padding-left: 22px;
+        }
+
+        li {
+            margin: 6px 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 18px;
+            background: #fff;
+        }
+
+        .flow,
+        .summary {
+            background: var(--dark);
+            color: #f9fafb;
+            border-radius: 16px;
+            padding: 16px 18px;
+            white-space: pre-wrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            overflow-x: auto;
+            margin: 14px 0;
+        }
+
+        .point {
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin: 14px 0;
+        }
+
+        .warn {
+            background: var(--warn-soft);
+            border: 1px solid var(--warn-line);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin: 14px 0;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 760px) {
+            body {
+                padding: 24px 14px 60px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <header class="hero">
-      <h1>Oracle DBA 학습 노트 006</h1>
-      <p>범위: PDF 50~53 trace file / dictionary 관련 내용 + 54~60 연습문제와 답안, 그리고 각 문제의 학습 목표</p>
-    </header>
-
-    <nav class="nav">
-      <a href="index.html">← 메인 인덱스로 돌아가기</a>
-    </nav>
-
-    <section class="section">
-      <div class="badge">1단계 · 범위 구분</div>
-      <h2>이번 범위는 두 덩어리로 나뉜다</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>50~53페이지</h3>
-          <ul>
-            <li>각종 trace file</li>
-            <li>trace file 위치 확인</li>
-            <li>v$diag_info, v$parameter 사용</li>
-            <li>background_dump_dest / user_dump_dest / core_dump_dest</li>
-            <li>10046 trace와 tkprof 변환</li>
-            <li>trace 통계 해석</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>54~60페이지</h3>
-          <ul>
-            <li>연습문제</li>
-            <li>AUTOTRACE</li>
-            <li>DBMS_XPLAN.DISPLAY</li>
-            <li>DBMS_XPLAN.DISPLAY_CURSOR</li>
-            <li>10046 TRACE</li>
-            <li>답안을 통해 SQL 분석 도구 사용 흐름 익히기</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="point">
-        <strong>핵심:</strong> 앞부분은 <strong>SQL 실행 흔적을 남기고 찾는 방법</strong>, 뒷부분은 <strong>그 도구들을 실제 손으로 써보며 비교 학습하는 파트</strong>다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 50~53페이지</div>
-      <h2>Trace file과 Dictionary를 통해 “실행 흔적”을 찾는 법</h2>
-
-      <h3>왜 이 파트가 중요한가</h3>
-      <p>지금까지는 SGA, redo, undo, checkpoint 같은 내부 구조를 공부했다면, 이 파트부터는 <strong>실제 SQL이 어떻게 실행됐는지 증거를 수집하는 방법</strong>으로 넘어간다. 즉, 구조 이해에서 <strong>분석 도구</strong>로 넘어가는 전환 구간이다.</p>
-
-      <div class="flow">문제 발생
-→ 실행 흔적(trace) 남김
-→ trace 파일 위치 확인
-→ tkprof로 사람이 읽을 수 있게 변환
-→ logical read / physical read / current read / row 수 / fetch 회수 해석</div>
-
-      <h3>Dictionary / 동적 성능 뷰가 여기서 왜 나오나</h3>
-      <p>여기서 말하는 dictionary는 단순히 테이블 정의를 본다는 의미보다, <strong>Oracle이 현재 어디에 무엇을 기록하고 있는지 조회하는 내부 뷰를 사용하는 것</strong>에 더 가깝다. 특히 trace 파일 위치나 파라미터 값을 찾기 위해 <code>v$diag_info</code>, <code>v$parameter</code> 같은 뷰를 사용한다.</p>
-
-      <div class="grid">
-        <div class="card">
-          <h3>v$diag_info</h3>
-          <p>12c 이상 환경에서 diag trace 경로를 확인할 때 사용한다.</p>
-          <div class="flow">select value
-from v$diag_info
-where name = 'Diag Trace';</div>
-        </div>
-        <div class="card">
-          <h3>v$parameter</h3>
-          <p>9i, 10g, 11g 계열에서 trace 관련 dump 경로를 확인할 때 사용한다.</p>
-          <div class="flow">select name, value
-from v$parameter
-where name in
-('background_dump_dest','user_dump_dest','core_dump_dest');</div>
-        </div>
-      </div>
-
-      <h3>trace file 종류와 의미</h3>
-      <div class="grid">
-        <div class="card">
-          <h3>alert&lt;SID&gt;.log</h3>
-          <ul>
-            <li>DB 기동 / 종료 / 각종 에러 정보</li>
-            <li>DBA가 항상 확인해야 할 log 파일</li>
-            <li>12c 이상은 diag trace 위치에 생성</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>background_dump_dest</h3>
-          <ul>
-            <li>Background Process가 생성한 각종 파일 위치</li>
-            <li>구버전에서는 alert log 위치와 연결</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="grid">
-        <div class="card">
-          <h3>user_dump_dest</h3>
-          <ul>
-            <li>User trace 파일 생성 위치</li>
-            <li>10046 trace file 등 user가 생성한 trace 파일</li>
-            <li>SQL의 주요 에러 발생 시 생성 가능</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>core_dump_dest</h3>
-          <ul>
-            <li>Core file dump 위치</li>
-            <li>일반 사용자가 직접 보기 쉽지 않음</li>
-            <li>Oracle 지원팀이 장애 원인 파악용으로 요청하는 경우가 많음</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="warn">
-        <strong>실무 포인트:</strong> alert log는 DBA가 매일 보는 파일이고, user trace는 특정 SQL 분석 시 찾는 파일이며, core dump는 일반 운영보다 <strong>심각한 장애 분석</strong> 쪽에 가깝다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 50~53페이지</div>
-      <h2>SQL Trace, 10046 Trace, TKPROF는 어떻게 연결되는가</h2>
-
-      <h3>기본 흐름</h3>
-      <div class="flow">SQL 실행
-→ trace 정보 생성
-→ OS에서 trace 파일 찾기
-→ tkprof로 사람이 읽을 수 있는 보고서로 변환
-→ 통계 해석</div>
-
-      <h3>10046 trace 위치 확인</h3>
-      <div class="flow">-- 9i, 10g, 11g
-select name, value
-from v$parameter
-where name = 'user_dump_dest';
-
--- 12c 이상
-select value
-from v$diag_info
-where name = 'Diag Trace';</div>
-
-      <h3>OS에서 trace 파일 찾기</h3>
-      <div class="flow">OS> ls -l *sik*     -- unix 계열
-OS> dir *sik*       -- windows</div>
-
-      <h3>tkprof 변환</h3>
-      <div class="flow">OS> tkprof orcl_ora_12244_sik.trc sik10046.txt sys=no</div>
-
-      <p><code>sys=no</code> 옵션은 SQL 파싱 중 발생하는 내부 수행 SQL을 제외해, 사용자가 보고 싶은 SQL 중심으로 결과를 정리하려는 의도다.</p>
-
-      <div class="point">
-        <strong>핵심:</strong> trace 파일은 원본 증거이고, tkprof는 그 증거를 <strong>사람이 읽고 비교할 수 있는 리포트</strong>로 바꾸는 도구다.
-      </div>
-
-      <h3>10046 trace에서 보는 대표 통계</h3>
-      <div class="grid">
-        <div class="card">
-          <h3>count</h3>
-          <p>OCI procedure가 수행된 횟수</p>
-        </div>
-        <div class="card">
-          <h3>cpu / elapsed</h3>
-          <p>CPU 사용 시간 / 전체 경과 시간</p>
-        </div>
-        <div class="card">
-          <h3>disk</h3>
-          <p>physical read 수</p>
-        </div>
-        <div class="card">
-          <h3>query</h3>
-          <p>consistent read용 logical read 수</p>
-        </div>
-        <div class="card">
-          <h3>current</h3>
-          <p>current mode read 수, 보통 update 계열과 연결</p>
-        </div>
-        <div class="card">
-          <h3>rows</h3>
-          <p>fetch 또는 execute에서 처리된 row 수</p>
-        </div>
-      </div>
-
-      <h3>10046 통계 해석 포인트</h3>
-      <div class="flow">query   = logical read (cr, buffers, consistent gets)
-disk    = physical read (pr, reads, physical reads)
-current = current mode read
-fetch rows  = fetch한 row 수
-fetch count = fetch 수행 횟수, sql*net roundtrip과 연결</div>
-
-      <div class="warn">
-        <strong>실무 포인트:</strong> query가 많으면 logical read가 많다는 뜻이고, disk가 많으면 physical read가 많다는 뜻이다. current는 보통 update 성격의 접근과 연결된다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">2단계 · 50~53페이지</div>
-      <h2>sql trace와 10046 trace의 차이</h2>
-      <p>PDF에서는 <code>sql_trace</code> 실습과 10046 trace를 모두 보여주는데, 둘은 비슷해 보이지만 깊이가 다르다.</p>
-
-      <h3>sql_trace 실습 흐름</h3>
-      <div class="flow">alter session set max_dump_file_size = unlimited;
-alter session set tracefile_identifier='sik';
-alter session set sql_trace=true;
-
-select * from emp;
-
-alter session set sql_trace=false;</div>
-
-      <p>이후 trace file을 찾아 tkprof로 변환하고 분석한다.</p>
-
-      <div class="point">
-        <strong>중요 차이:</strong> PDF에서 명시하듯 <strong>sql_trace는 10046 trace와 달리 wait event 정보가 출력되지 않는다.</strong> 즉, 기본 실행 통계는 보지만 wait까지 깊게 보는 건 10046 쪽이다.
-      </div>
-
-      <h3>10046 trace 실습 흐름</h3>
-      <div class="flow">ALTER SESSION SET EVENTS '10046 trace name context forever, level 12';
--- SQL 수행
-ALTER SESSION SET EVENTS '10046 trace name context off';</div>
-
-      <p>level 12는 wait + bind까지 포함하는 강한 추적 수준으로 많이 알려져 있다. 즉 sql_trace보다 더 깊은 실행 흔적을 남긴다.</p>
-
-      <div class="warn">
-        <strong>실무 감각:</strong> 단순히 실행계획과 read 통계만 볼 거면 autotrace / xplan으로도 충분할 수 있지만, <strong>실행 도중 어디서 기다렸는지까지 봐야 하면 10046</strong>이 필요하다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">3단계 · 54~60페이지 연습문제</div>
-      <h2>연습문제는 “SQL 분석 도구 4종 세트”를 손으로 익히게 한다</h2>
-      <p>54~60페이지의 연습문제는 단순 답 외우기가 아니라, 같은 SQL을 서로 다른 도구로 관찰해보게 만드는 구조다.</p>
-
-      <div class="flow">같은 SQL
-→ AUTOTRACE로 본다
-→ DBMS_XPLAN.DISPLAY로 본다
-→ DBMS_XPLAN.DISPLAY_CURSOR로 본다
-→ 10046 TRACE로 본다
-
-즉,
-“같은 SQL을 여러 관찰 도구로 어떻게 다르게 해석하는지”
-익히는 연습이다.</div>
-
-      <div class="point">
-        <strong>핵심 목표:</strong> “실행계획 보는 법”만이 아니라, <strong>예상 계획 / 실제 수행 / trace 기반 증거</strong>를 구분해서 보는 감각을 만드는 것이다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">연습문제 17-1</div>
-      <h2>AUTOTRACE</h2>
-
-      <h3>문제</h3>
-      <div class="flow">SQLPLUS를 이용하여 아래 SQL의 AUTOTRACE를 떠 보세요.
-
-SELECT *
-FROM HR.EMPLOYEES
-WHERE EMPLOYEE_ID = 100;</div>
-
-      <h3>답안 흐름</h3>
-      <div class="flow">C:\Users\seo> sqlplus system/manager1@orclpdb
-
-set linesize 200 pagesize 200
-set autotrace traceonly
-
-SELECT *
-FROM HR.EMPLOYEES
-WHERE EMPLOYEE_ID = 100;</div>
-
-      <h3>이 문제의 학습 목표</h3>
-      <ul>
-        <li>SQL*Plus에서 가장 빠르게 실행계획과 통계를 확인하는 법 익히기</li>
-        <li>trace file 없이 화면에서 바로 분석하는 감각 익히기</li>
-        <li>개발 / 운영 초입에서 빠른 1차 점검 도구로 활용하는 습관 만들기</li>
-      </ul>
-
-      <h3>이 문제를 통해 이해해야 하는 개념</h3>
-      <ul>
-        <li><strong>AUTOTRACE는 빠른 1차 점검 도구</strong>다.</li>
-        <li>trace file을 만들지 않고 실행계획과 통계를 화면에 바로 보여준다.</li>
-        <li>PDF에서 소개된 옵션 차이를 이해해야 한다.</li>
-      </ul>
-
-      <div class="flow">set autotrace on
-→ SQL 결과 + 실행계획 + 실행통계
-
-set autotrace traceonly
-→ SQL 결과는 숨기고 실행계획/통계만 확인</div>
-
-      <div class="warn">
-        <strong>실무 포인트:</strong> AUTOTRACE는 빠르지만, 실제 커서에 남은 상세 실행 정보나 wait event까지 보기는 어렵다. 즉 <strong>빠른 예비 분석용</strong>이다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">연습문제 17-2</div>
-      <h2>DBMS_XPLAN.DISPLAY</h2>
-
-      <h3>문제</h3>
-      <div class="flow">DBMS_XPLAN.DISPLAY를 이용하여 17-1번 SQL의 실행계획을 확인하세요.</div>
-
-      <h3>답안 흐름</h3>
-      <div class="flow">EXPLAIN PLAN FOR
-SELECT *
-FROM HR.EMPLOYEES
-WHERE EMPLOYEE_ID = 100;
-
-SELECT *
-FROM TABLE(DBMS_XPLAN.DISPLAY(NULL, NULL, 'TYPICAL'));</div>
-
-      <h3>이 문제의 학습 목표</h3>
-      <ul>
-        <li>예상 실행계획을 PLAN_TABLE에 저장하고 읽는 법 익히기</li>
-        <li>SQL을 실제 실행하지 않고도 옵티마이저 계획을 확인하는 절차 익히기</li>
-        <li>AUTOTRACE와 달리 실행 없이 계획만 보는 방식 이해하기</li>
-      </ul>
-
-      <h3>이 문제를 통해 이해해야 하는 개념</h3>
-      <ul>
-        <li><strong>EXPLAIN PLAN은 예상 계획</strong>이다.</li>
-        <li>실제 수행 결과와 다를 수 있다.</li>
-        <li>즉 “옵티마이저가 이렇게 하겠다고 생각한 계획”을 보는 도구다.</li>
-      </ul>
-
-      <div class="point">
-        <strong>핵심 구분:</strong> DISPLAY는 <strong>예상 계획</strong>이고, 실제 실행 후의 row 수나 read 수를 직접 보여주는 도구는 아니다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">연습문제 17-3</div>
-      <h2>DBMS_XPLAN.DISPLAY_CURSOR</h2>
-
-      <h3>문제</h3>
-      <div class="flow">DBMS_XPLAN.DISPLAY_CURSOR를 이용하여 17-1번 SQL의 실행계획 및 수행 정보를 확인하세요.</div>
-
-      <h3>답안 흐름</h3>
-      <div class="flow">ALTER SESSION SET STATISTICS_LEVEL = ALL;
-
-SELECT *
-FROM HR.EMPLOYEES
-WHERE EMPLOYEE_ID = 100;
-
-SELECT *
-FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(NULL, NULL, 'IOSTATS LAST -ROWS'));</div>
-
-      <h3>이 문제의 학습 목표</h3>
-      <ul>
-        <li>실제로 수행된 SQL 커서를 기준으로 계획을 읽는 법 익히기</li>
-        <li>예상 계획과 실제 수행 통계를 구분해서 보는 감각 만들기</li>
-        <li>library cache에 남은 정보를 활용하는 흐름 이해하기</li>
-      </ul>
-
-      <h3>이 문제를 통해 이해해야 하는 개념</h3>
-      <ul>
-        <li><strong>DISPLAY_CURSOR는 실제 실행 후 커서 기반 분석</strong>이다.</li>
-        <li>STATISTICS_LEVEL = ALL로 실행 통계를 남긴다.</li>
-        <li>AUTOTRACE나 EXPLAIN PLAN보다 실제 실행 정보에 더 가깝다.</li>
-      </ul>
-
-      <div class="warn">
-        <strong>실무 포인트:</strong> 예상 계획과 실제 계획이 다를 수 있기 때문에, 튜닝할 때는 DISPLAY_CURSOR가 훨씬 유용한 경우가 많다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">연습문제 17-4</div>
-      <h2>10046 TRACE</h2>
-
-      <h3>문제</h3>
-      <div class="flow">10046 TRACE를 이용하여 17-1번의 SQL 실행 정보를 확인하세요.</div>
-
-      <h3>답안 흐름</h3>
-      <div class="flow">ALTER SESSION SET TRACEFILE_IDENTIFIER = 'sik';
-
-ALTER SESSION SET EVENTS '10046 trace name context forever, level 12';
-
-SELECT *
-FROM HR.EMPLOYEES
-WHERE EMPLOYEE_ID = 100;
-
-ALTER SESSION SET EVENTS '10046 trace name context off';
-
-SELECT VALUE
-FROM V$DIAG_INFO
-WHERE NAME = 'Diag Trace';</div>
-
-      <h3>이 문제의 학습 목표</h3>
-      <ul>
-        <li>trace를 실제로 남기고 파일 경로까지 확인하는 전 과정을 익히기</li>
-        <li>SQL 분석을 화면 출력이 아니라 <strong>파일 기반 증거 수집</strong>으로 하는 절차 익히기</li>
-        <li>tracefile_identifier를 통해 원하는 trace 파일을 찾는 감각 만들기</li>
-      </ul>
-
-      <h3>이 문제를 통해 이해해야 하는 개념</h3>
-      <ul>
-        <li>10046 trace는 가장 깊은 SQL 실행 추적 도구 중 하나다.</li>
-        <li>단순 실행계획이 아니라 wait, read, parse, fetch, row 처리, internal SQL까지 볼 수 있다.</li>
-        <li>trace 파일은 남겨도 사람이 바로 읽기 어려워 tkprof와 함께 쓰는 경우가 많다.</li>
-      </ul>
-
-      <div class="point">
-        <strong>핵심:</strong> 17-4는 “실행계획 보기”가 아니라, <strong>증거를 남기고 추적하는 DBA 방식의 분석</strong>을 익히는 문제다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">4단계 · 네 문제를 한 번에 비교</div>
-      <h2>연습문제 17-1 ~ 17-4를 통해 최종적으로 얻어야 하는 감각</h2>
-
-      <div class="grid">
-        <div class="card">
-          <h3>17-1 AUTOTRACE</h3>
-          <p>빠른 1차 점검</p>
-        </div>
-        <div class="card">
-          <h3>17-2 DISPLAY</h3>
-          <p>예상 실행계획 확인</p>
-        </div>
-        <div class="card">
-          <h3>17-3 DISPLAY_CURSOR</h3>
-          <p>실제 수행 커서 기반 분석</p>
-        </div>
-        <div class="card">
-          <h3>17-4 10046 TRACE</h3>
-          <p>파일 기반 정밀 추적</p>
-        </div>
-      </div>
-
-      <div class="flow">AUTOTRACE
-→ 빨리 본다
-
-DISPLAY
-→ 옵티마이저가 생각한 계획 본다
-
-DISPLAY_CURSOR
-→ 실제 실행 후 커서 기준으로 본다
-
-10046 TRACE
-→ 가장 깊게 추적하고 증거를 남긴다</div>
-
-      <div class="warn">
-        <strong>실무 핵심:</strong> DBA는 도구 하나만 쓰지 않는다. 상황에 따라 <strong>빠른 점검 → 실제 실행 확인 → 정밀 추적</strong>으로 깊이를 조절한다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">5단계 · 실무 포인트</div>
-      <h2>이 범위를 실무에서 어떻게 써먹는가</h2>
-      <ul>
-        <li><strong>alert log</strong>는 매일 확인하는 기본 로그다.</li>
-        <li><strong>user trace</strong>는 특정 SQL / 세션 분석 시 찾는다.</li>
-        <li><strong>10046 trace</strong>는 성능 문제 증거를 수집하는 강력한 도구다.</li>
-        <li><strong>tkprof</strong>는 raw trace를 읽기 좋은 리포트로 바꾼다.</li>
-        <li><strong>AUTOTRACE</strong>는 빠른 1차 점검용이다.</li>
-        <li><strong>DISPLAY</strong>와 <strong>DISPLAY_CURSOR</strong> 차이를 모르면 예상 계획과 실제 계획을 혼동하기 쉽다.</li>
-      </ul>
-
-      <div class="point">
-        <strong>즉:</strong> 50~60페이지는 단순히 명령어를 배우는 장이 아니라, <strong>“SQL 성능 문제를 어떤 깊이로 관찰할 것인가”를 배우는 파트</strong>다.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="badge">6단계 · 핵심 요약</div>
-      <h2>이번 범위 전체 요약</h2>
-      <div class="summary">50~53페이지는 trace file과 관련 dictionary / 동적 성능 뷰를 이용해
-Oracle이 남긴 실행 흔적을 어디서 찾고 어떻게 읽는지 설명하는 구간이다.
-
-핵심은
-v$diag_info, v$parameter로 trace 경로를 찾고,
-sql_trace와 10046 trace를 남기고,
-tkprof로 사람이 읽을 수 있는 보고서로 바꿔
-logical read, physical read, current read, fetch, row 처리량을 해석하는 것이다.
-
-54~60페이지의 연습문제는
-같은 SQL을 AUTOTRACE, DBMS_XPLAN.DISPLAY,
-DBMS_XPLAN.DISPLAY_CURSOR, 10046 TRACE
-네 가지 방식으로 관찰하게 만든다.
-
-즉 이 범위의 진짜 목표는
-“도구 사용법 암기”가 아니라,
-예상 계획 / 실제 커서 / trace 증거를
-각각 어떤 상황에서 써야 하는지
-구분하는 감각을 만드는 데 있다.</div>
-    </section>
-  </div>
+    <div class="wrap">
+        <header class="hero">
+            <h1>Oracle DBA 학습 노트 006</h1>
+            <p>범위: PDF 50~53 trace file / dictionary 관련 내용 + 54~60 연습문제와 답안, 그리고 각 문제의 학습 목표</p>
+        </header>
+
+        <nav class="nav">
+            <a href="index.html">← 메인 인덱스로 돌아가기</a>
+        </nav>
+
+        <section class="section">
+            <div class="badge">1단계 · 범위 구분</div>
+            <h2>이번 범위는 두 덩어리로 나뉜다</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>50~53페이지</h3>
+                    <ul>
+                        <li>각종 trace file</li>
+                        <li>trace file 위치 확인</li>
+                        <li>v$diag_info, v$parameter 사용</li>
+                        <li>background_dump_dest / user_dump_dest / core_dump_dest</li>
+                        <li>10046 trace와 tkprof 변환</li>
+                        <li>trace 통계 해석</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>54~60페이지</h3>
+                    <ul>
+                        <li>연습문제</li>
+                        <li>DB 기동 단계 (NOMOUNT → MOUNT → OPEN)</li>
+                        <li>v$instance / v$controlfile 조회</li>
+                        <li>SPFILE ↔ PFILE 변환 및 기동 방식</li>
+                        <li>undo_retention 파라미터 변경</li>
+                        <li>SQL*Plus 출력 설정 및 DB 상태 확인</li>
+                        <li>답안을 통해 DB 운영 기본 흐름과 상태 점검 방식 학습</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="point">
+                <strong>핵심:</strong> 앞부분은 <strong>SQL 실행 흔적(trace)을 남기고 분석하는 방법</strong>,
+                뒷부분은 <strong>DB 기동 단계, 파라미터, 상태 조회 등 DBA의 기본 운영 흐름을 직접 수행해보는 실습 파트</strong>다.
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="badge">2단계 · 50~53페이지</div>
+            <h2>Trace file과 Dictionary를 통해 “실행 흔적”을 찾는 법</h2>
+
+            <h3>왜 이 파트가 중요한가</h3>
+            <p>지금까지는 SGA, redo, undo, checkpoint 같은 내부 구조를 공부했다면, 이 파트부터는 <strong>실제 SQL이 어떻게 실행됐는지 증거를 수집하는
+                    방법</strong>으로 넘어간다. 즉, 구조 이해에서 <strong>분석 도구</strong>로 넘어가는 전환 구간이다.</p>
+
+            <div class="flow">문제 발생
+                → 실행 흔적(trace) 남김
+                → trace 파일 위치 확인
+                → tkprof로 사람이 읽을 수 있게 변환
+                → logical read / physical read / current read / row 수 / fetch 회수 해석</div>
+
+            <h3>Dictionary / 동적 성능 뷰가 여기서 왜 나오나</h3>
+            <p>여기서 말하는 dictionary는 단순히 테이블 정의를 본다는 의미보다, <strong>Oracle이 현재 어디에 무엇을 기록하고 있는지 조회하는 내부 뷰를 사용하는 것</strong>에
+                더 가깝다. 특히 trace 파일 위치나 파라미터 값을 찾기 위해 <code>v$diag_info</code>, <code>v$parameter</code> 같은 뷰를 사용한다.</p>
+
+            <div class="grid">
+                <div class="card">
+                    <h3>v$diag_info</h3>
+                    <p>12c 이상 환경에서 diag trace 경로를 확인할 때 사용한다.</p>
+                    <div class="flow">select value
+                        from v$diag_info
+                        where name = 'Diag Trace';</div>
+                </div>
+                <div class="card">
+                    <h3>v$parameter</h3>
+                    <p>9i, 10g, 11g 계열에서 trace 관련 dump 경로를 확인할 때 사용한다.</p>
+                    <div class="flow">select name, value
+                        from v$parameter
+                        where name in
+                        ('background_dump_dest','user_dump_dest','core_dump_dest');</div>
+                </div>
+            </div>
+
+            <h3>trace file 종류와 의미</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>alert&lt;SID&gt;.log</h3>
+                    <ul>
+                        <li>DB 기동 / 종료 / 각종 에러 정보</li>
+                        <li>DBA가 항상 확인해야 할 log 파일</li>
+                        <li>12c 이상은 diag trace 위치에 생성</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>background_dump_dest</h3>
+                    <ul>
+                        <li>Background Process가 생성한 각종 파일 위치</li>
+                        <li>구버전에서는 alert log 위치와 연결</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3>user_dump_dest</h3>
+                    <ul>
+                        <li>User trace 파일 생성 위치</li>
+                        <li>10046 trace file 등 user가 생성한 trace 파일</li>
+                        <li>SQL의 주요 에러 발생 시 생성 가능</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>core_dump_dest</h3>
+                    <ul>
+                        <li>Core file dump 위치</li>
+                        <li>일반 사용자가 직접 보기 쉽지 않음</li>
+                        <li>Oracle 지원팀이 장애 원인 파악용으로 요청하는 경우가 많음</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="warn">
+                <strong>실무 포인트:</strong> alert log는 DBA가 매일 보는 파일이고, user trace는 특정 SQL 분석 시 찾는 파일이며, core dump는 일반 운영보다
+                <strong>심각한 장애 분석</strong> 쪽에 가깝다.
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="badge">2단계 · 50~53페이지</div>
+            <h2>SQL Trace, 10046 Trace, TKPROF는 어떻게 연결되는가</h2>
+
+            <h3>기본 흐름</h3>
+            <div class="flow">SQL 실행
+                → trace 정보 생성
+                → OS에서 trace 파일 찾기
+                → tkprof로 사람이 읽을 수 있는 보고서로 변환
+                → 통계 해석</div>
+
+            <h3>10046 trace 위치 확인</h3>
+            <div class="flow">-- 9i, 10g, 11g
+                select name, value
+                from v$parameter
+                where name = 'user_dump_dest';
+
+                -- 12c 이상
+                select value
+                from v$diag_info
+                where name = 'Diag Trace';</div>
+
+            <h3>OS에서 trace 파일 찾기</h3>
+            <div class="flow">OS> ls -l *sik* -- unix 계열
+                OS> dir *sik* -- windows</div>
+
+            <h3>tkprof 변환</h3>
+            <div class="flow">OS> tkprof orcl_ora_12244_sik.trc sik10046.txt sys=no</div>
+
+            <p><code>sys=no</code> 옵션은 SQL 파싱 중 발생하는 내부 수행 SQL을 제외해, 사용자가 보고 싶은 SQL 중심으로 결과를 정리하려는 의도다.</p>
+
+            <div class="point">
+                <strong>핵심:</strong> trace 파일은 원본 증거이고, tkprof는 그 증거를 <strong>사람이 읽고 비교할 수 있는 리포트</strong>로 바꾸는 도구다.
+            </div>
+
+            <h3>10046 trace에서 보는 대표 통계</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3>count</h3>
+                    <p>OCI procedure가 수행된 횟수</p>
+                </div>
+                <div class="card">
+                    <h3>cpu / elapsed</h3>
+                    <p>CPU 사용 시간 / 전체 경과 시간</p>
+                </div>
+                <div class="card">
+                    <h3>disk</h3>
+                    <p>physical read 수</p>
+                </div>
+                <div class="card">
+                    <h3>query</h3>
+                    <p>consistent read용 logical read 수</p>
+                </div>
+                <div class="card">
+                    <h3>current</h3>
+                    <p>current mode read 수, 보통 update 계열과 연결</p>
+                </div>
+                <div class="card">
+                    <h3>rows</h3>
+                    <p>fetch 또는 execute에서 처리된 row 수</p>
+                </div>
+            </div>
+
+            <h3>10046 통계 해석 포인트</h3>
+            <div class="flow">query = logical read (cr, buffers, consistent gets)
+                disk = physical read (pr, reads, physical reads)
+                current = current mode read
+                fetch rows = fetch한 row 수
+                fetch count = fetch 수행 횟수, sql*net roundtrip과 연결</div>
+
+            <div class="warn">
+                <strong>실무 포인트:</strong> query가 많으면 logical read가 많다는 뜻이고, disk가 많으면 physical read가 많다는 뜻이다. current는 보통
+                update 성격의 접근과 연결된다.
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="badge">2단계 · 50~53페이지</div>
+            <h2>sql trace와 10046 trace의 차이</h2>
+            <p>PDF에서는 <code>sql_trace</code> 실습과 10046 trace를 모두 보여주는데, 둘은 비슷해 보이지만 깊이가 다르다.</p>
+
+            <h3>sql_trace 실습 흐름</h3>
+            <div class="flow">alter session set max_dump_file_size = unlimited;
+                alter session set tracefile_identifier='sik';
+                alter session set sql_trace=true;
+
+                select * from emp;
+
+                alter session set sql_trace=false;</div>
+
+            <p>이후 trace file을 찾아 tkprof로 변환하고 분석한다.</p>
+
+            <div class="point">
+                <strong>중요 차이:</strong> PDF에서 명시하듯 <strong>sql_trace는 10046 trace와 달리 wait event 정보가 출력되지 않는다.</strong>
+                즉, 기본 실행 통계는 보지만 wait까지 깊게 보는 건 10046 쪽이다.
+            </div>
+
+            <h3>10046 trace 실습 흐름</h3>
+            <div class="flow">ALTER SESSION SET EVENTS '10046 trace name context forever, level 12';
+                -- SQL 수행
+                ALTER SESSION SET EVENTS '10046 trace name context off';</div>
+
+            <p>level 12는 wait + bind까지 포함하는 강한 추적 수준으로 많이 알려져 있다. 즉 sql_trace보다 더 깊은 실행 흔적을 남긴다.</p>
+
+            <div class="warn">
+                <strong>실무 감각:</strong> 단순히 실행계획과 read 통계만 볼 거면 autotrace / xplan으로도 충분할 수 있지만, <strong>실행 도중 어디서
+                    기다렸는지까지 봐야 하면 10046</strong>이 필요하다.
+            </div>
+        </section>
+        <section class="section">
+            <div class="badge">3단계 · 54~60페이지 연습문제</div>
+            <h2>DB 기동 / 파라미터 / SQL*Plus 실습</h2>
+
+            <h3>1-1. DB 기동과 종료</h3>
+
+            <div class="flow">1-1-1.
+                sqlplus 접속 후 DB 종료 → nomount 상태로 기동
+
+                1-1-2.
+                v$instance 조회
+                (instance_name, host_name, version, status)
+
+                1-1-3.
+                mount 단계 진입 후
+                v$controlfile.name 조회
+
+                1-1-4.
+                open 단계 진입 후 SQL Tool 접속</div>
+
+            <div class="point">
+                <strong>핵심:</strong>
+                DB는 단계별로 올라가며 각 단계에서 접근 가능한 정보가 다르다.
+            </div>
+
+            <div class="flow">shutdown immediate;
+                startup nomount;
+                startup mount;
+                alter database open;</div>
+
+            <div class="warn">
+                <strong>실무 연결:</strong>
+                NOMOUNT 실패 → parameter / instance 문제
+                MOUNT 실패 → control file 문제
+                OPEN 실패 → datafile / recovery 문제
+            </div>
+
+            <hr>
+
+            <h3>1-2. 초기화 파라미터</h3>
+
+            <div class="flow">1-2-1.
+                spfile → pfile 생성
+                (initORCL.ora)
+
+                1-2-2.
+                pfile로 DB 기동
+
+                1-2-3.
+                spfile로 DB 기동
+
+                1-2-4.
+                undo_retention = 3600
+                (현재 + spfile 모두 반영)</div>
+
+            <div class="flow">ALTER SYSTEM SET undo_retention = 3600 SCOPE=BOTH;</div>
+
+            <div class="point">
+                <strong>핵심:</strong>
+                spfile = 운영용
+                pfile = 복구용 / 수정용
+            </div>
+
+            <div class="warn">
+                <strong>실무 연결:</strong>
+                장애 시 pfile로 복구하는 케이스 매우 많음
+            </div>
+
+            <hr>
+
+            <h3>SQL*Plus 출력 설정</h3>
+
+            <div class="flow">set linesize 200
+                set pagesize 200
+
+                column instance_name for a15
+                column host_name for a30
+                column version for a20
+                column status for a10</div>
+
+            <div class="flow">select instance_name, host_name, version, status
+                from v$instance;</div>
+
+            <div class="point">
+                <strong>핵심:</strong>
+                DBA는 데이터를 "보기 좋게" 출력하는 능력이 중요하다.
+            </div>
+
+            <hr>
+
+            <h3>NOMOUNT 상태 확인</h3>
+
+            <div class="flow">startup nomount;</div>
+
+            <div class="flow">Total System Global Area ...
+                Database Buffers ...
+                Redo Buffers ...</div>
+
+            <div class="point">
+                <strong>핵심:</strong>
+                NOMOUNT = instance만 올라온 상태 (SGA만 존재)
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="badge">5단계 · 핵심 요약</div>
+            <h2>이번 범위 전체 요약</h2>
+
+            <div class="summary">
+                50~53페이지는
+                Oracle 내부에서 발생한 SQL 실행을
+                “trace file” 형태로 남기고
+
+                이를 v$parameter, v$diag_info로 위치를 찾고
+                tkprof로 분석하는
+
+                즉,
+                "문제 발생 후 증거를 수집하고 해석하는 과정"
+                을 설명한다.
+
+                ---
+
+                54~60페이지 연습문제는
+                SQL 분석이 아니라
+
+                DBA의 가장 기본적인 운영 능력인
+
+                1. DB 기동 단계 이해
+                (NOMOUNT → MOUNT → OPEN)
+
+                2. control file / instance / datafile 관계 이해
+
+                3. spfile / pfile 구조 이해
+
+                4. 파라미터 변경과 적용 범위 이해
+
+                5. SQL*Plus를 통한 상태 확인 및 출력 제어
+
+                를 직접 손으로 수행하게 만든다.
+
+                ---
+
+                즉 이 범위의 본질은 두 가지다.
+
+                1) trace 기반 "분석 능력"
+                2) DB 기동 / 파라미터 기반 "운영 능력"
+
+                ---
+
+                그리고 이 두 개가 합쳐져야
+
+                👉 장애 발생 시
+                → DB 상태 확인
+                → 원인 분석
+                → trace 기반 증거 확보
+                → 복구 방향 결정
+
+                이라는 DBA의 실제 업무 흐름이 완성된다.
+            </div>
+        </section>
+    </div>
 </body>
+
 </html>
