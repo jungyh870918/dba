@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 병목·압박·해결 가이드</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+      --good-soft: #ecfdf5;
+      --good-line: #a7f3d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.3; }
+    .hero p { margin: 0; color: rgba(255,255,255,0.86); }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 { margin: 0 0 14px; font-size: 28px; line-height: 1.35; }
+    h3 { margin: 24px 0 10px; font-size: 20px; line-height: 1.45; }
+    p { margin: 10px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .good {
+      background: var(--good-soft);
+      border: 1px solid var(--good-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f8fafc; }
+    tr:first-child th, tr:first-child td { border-top: none; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+      table, thead, tbody, tr, th, td { display: block; }
+      th { border-top: 1px solid var(--line); }
+      tr:first-child th { border-top: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 병목·압박·해결 가이드</h1>
+      <p>logical read / physical read / redo / parse / checkpoint / 용량 / 실행계획 / 병목 해소를 실무 사례 중심으로 정리</p>
+    </header>
+
+    <section class="section">
+      <div class="badge">1단계 · 먼저 보는 그림</div>
+      <h2>압박(pressure)이라는 말은 “다음 단계가 막히는 상태”를 뜻한다</h2>
+      <div class="flow">트랜잭션 많음
+→ redo 빨리 생성
+→ LGWR / redo file / checkpoint 압박
+
+조회 많음
+→ logical read 증가 / physical read 증가
+→ CPU 또는 디스크 압박
+
+정렬·해시 많음
+→ PGA 부족
+→ temp tablespace 사용 증가
+
+세그먼트 / datafile 공간 부족
+→ tablespace 확장 필요
+→ 배치 실패 / insert 실패</div>
+      <div class="point">
+        <strong>핵심:</strong> 압박은 “뭔가 사용량이 높다” 수준이 아니라, <strong>밀린 작업 때문에 다음 단계가 진행되지 않는 상태</strong>다. dirty buffer를 못 내리면 DBWR 압박, redo를 재사용 못 하면 checkpoint 압박, commit이 밀리면 LGWR 압박처럼 해석한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · v$sysstat 보는 법</div>
+      <h2>한 번 찍는 게 아니라, 시간 차이로 증가량을 본다</h2>
+      <div class="flow">t1 시점 수집
+→ 5초 또는 10초 대기
+→ t2 시점 수집
+→ 증가량(delta) 계산
+→ 가장 많이 증가한 자원이 현재 병목 후보</div>
+
+      <table>
+        <tr>
+          <th>지표</th>
+          <th>증가가 크면 의미</th>
+          <th>의심 방향</th>
+        </tr>
+        <tr>
+          <td><code>consistent gets</code> / <code>db block gets</code></td>
+          <td>logical read 증가</td>
+          <td>CPU, 버퍼 캐시, 비효율 SQL</td>
+        </tr>
+        <tr>
+          <td><code>physical reads</code></td>
+          <td>디스크에서 직접 읽음</td>
+          <td>디스크 I/O, Full Scan, 캐시 미스</td>
+        </tr>
+        <tr>
+          <td><code>redo size</code></td>
+          <td>변경량 급증</td>
+          <td>LGWR, commit, log switch, checkpoint</td>
+        </tr>
+        <tr>
+          <td><code>parse count (hard)</code></td>
+          <td>하드 파싱 과다</td>
+          <td>Shared Pool, 바인드 변수 미사용</td>
+        </tr>
+      </table>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> <code>select * from v$sysstat;</code> 한 번으로 병목이 보이진 않는다. 증가량을 봐야 한다. 예를 들어 physical read가 5초 동안 20만 증가했다면, “디스크를 지금 엄청 읽고 있다”는 의미다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">3단계 · logical read 케이스</div>
+      <h2>logical read가 많으면 CPU / buffer cache / 비효율 SQL을 의심한다</h2>
+      <table>
+        <tr>
+          <th>시점</th>
+          <th>consistent gets</th>
+          <th>physical reads</th>
+        </tr>
+        <tr>
+          <td>t1</td>
+          <td>5,000,000</td>
+          <td>100,000</td>
+        </tr>
+        <tr>
+          <td>t2</td>
+          <td>6,500,000</td>
+          <td>120,000</td>
+        </tr>
+      </table>
+
+      <div class="point">
+        <strong>해석:</strong> 5초 동안 logical read는 150만 증가했고 physical read는 2만만 증가했다. 즉, 디스크보다 <strong>메모리에서 계속 읽고 반복 계산하는 성격</strong>이 강하다. 이건 CPU 병목 또는 비효율 SQL 가능성이 높다.
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>흔한 실제 사례</h3>
+          <ul>
+            <li>조인이 많은 조회 화면</li>
+            <li>필터 조건 없이 대량 데이터 조회</li>
+            <li>루프 안에서 반복적으로 같은 SQL 호출</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>해결 방향</h3>
+          <ul>
+            <li>실행계획 확인</li>
+            <li>불필요한 조인 제거</li>
+            <li><code>SELECT *</code> 지양, 필요한 컬럼만</li>
+            <li>조건식 / 조인 순서 / 인덱스 점검</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · physical read 케이스</div>
+      <h2>physical read가 많으면 디스크 I/O 병목을 먼저 본다</h2>
+      <table>
+        <tr>
+          <th>시점</th>
+          <th>physical reads</th>
+          <th>consistent gets</th>
+        </tr>
+        <tr>
+          <td>t1</td>
+          <td>1,000,000</td>
+          <td>2,000,000</td>
+        </tr>
+        <tr>
+          <td>t2</td>
+          <td>1,200,000</td>
+          <td>2,050,000</td>
+        </tr>
+      </table>
+
+      <div class="point">
+        <strong>해석:</strong> 5초 동안 physical read가 20만 늘었다. 이건 캐시보다 디스크를 계속 두드리고 있다는 뜻이다. <strong>인덱스 없음, Full Table Scan, 잘못된 실행계획, 캐시에 없는 대량 읽기</strong>를 먼저 의심한다.
+      </div>
+
+      <div class="warn">
+        <strong>흔한 실제 사례:</strong> 날짜 조건에 함수가 걸려 인덱스를 못 타는 조회, 통계가 오래돼 옵티마이저가 풀스캔을 선택한 배치, 대량 리포트 조회 같은 경우가 대표적이다.
+      </div>
+
+      <div class="good">
+        <strong>해결 방향:</strong> 실행계획 확인 → 조건 컬럼 인덱스 검토 → 함수 제거 / 범위조건으로 변경 → 통계 갱신 → 대량 조회면 direct path read 성격까지 함께 판단.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">5단계 · redo size 케이스</div>
+      <h2>redo size가 급증하면 DML 폭증과 commit 압박을 본다</h2>
+      <table>
+        <tr>
+          <th>시점</th>
+          <th>redo size</th>
+        </tr>
+        <tr>
+          <td>t1</td>
+          <td>500MB</td>
+        </tr>
+        <tr>
+          <td>t2</td>
+          <td>900MB</td>
+        </tr>
+      </table>
+
+      <div class="point">
+        <strong>해석:</strong> 5초 동안 400MB의 redo가 생겼다. 이건 대량 INSERT, UPDATE, DELETE 또는 인덱스가 많은 테이블에 대한 변경 작업이 집중된 상황일 수 있다.</div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>흔한 실제 사례</h3>
+          <ul>
+            <li>새벽 대량 적재 배치</li>
+            <li>대량 UPDATE 배치</li>
+            <li>인덱스가 많은 테이블에 대한 대량 INSERT</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>해결 방향</h3>
+          <ul>
+            <li>commit 빈도 재조정</li>
+            <li>배치 시간 분산</li>
+            <li>redo log size / group 수 검토</li>
+            <li>NOLOGGING 가능 여부는 매우 신중하게 판단</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>실무 감각:</strong> redo size 자체가 나쁜 건 아니다. 문제는 <strong>redo 생성 속도가 checkpoint와 log 재사용 속도를 이겨버릴 때</strong>다. 이때 switch가 잦아지고 checkpoint not complete 같은 현상으로 이어질 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">6단계 · parse count 케이스</div>
+      <h2>하드 파싱이 많으면 Shared Pool과 SQL 작성 방식을 본다</h2>
+      <table>
+        <tr>
+          <th>시점</th>
+          <th>parse count (hard)</th>
+        </tr>
+        <tr>
+          <td>t1</td>
+          <td>10,000</td>
+        </tr>
+        <tr>
+          <td>t2</td>
+          <td>20,000</td>
+        </tr>
+      </table>
+
+      <div class="point">
+        <strong>해석:</strong> 같은 시간 동안 하드 파싱이 1만 증가했다면 SQL을 매번 새로 컴파일하고 있다는 뜻이다. <strong>바인드 변수 미사용, SQL 문자열 매번 변경, Shared Pool 비효율</strong>을 의심한다.</div>
+
+      <div class="flow">-- 나쁜 예
+WHERE user_id = 1001
+WHERE user_id = 1002
+WHERE user_id = 1003
+
+-- 좋은 예
+WHERE user_id = :user_id</div>
+
+      <div class="good">
+        <strong>해결 방향:</strong> 바인드 변수 적용, 커서 재사용, 동적 SQL 남용 억제, Shared Pool 크기 / 파싱 구조 점검.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">7단계 · 압박 종류별 실제 사례</div>
+      <h2>병목은 “어디가 느린지”가 아니라 “무엇이 다음 단계 진행을 막는지”로 읽어야 한다</h2>
+      <table>
+        <tr>
+          <th>압박 종류</th>
+          <th>대표 현상</th>
+          <th>흔한 실제 사례</th>
+          <th>1차 대응</th>
+        </tr>
+        <tr>
+          <td>DBWR / Dirty Buffer 압박</td>
+          <td>free buffer 부족, 쓰기 지연</td>
+          <td>대량 변경 후 버퍼 캐시 dirty 과다</td>
+          <td>write workload 분산, checkpoint / I/O 확인</td>
+        </tr>
+        <tr>
+          <td>LGWR / Commit 압박</td>
+          <td>commit 느림, log file sync 대기</td>
+          <td>대량 DML 배치, 커밋 과다</td>
+          <td>commit 빈도 조정, redo 구조 확인</td>
+        </tr>
+        <tr>
+          <td>Checkpoint 압박</td>
+          <td>log switch 잦음, checkpoint not complete</td>
+          <td>redo log 너무 작음, 변경량 폭증</td>
+          <td>redo size / group 수 재검토</td>
+        </tr>
+        <tr>
+          <td>CPU 압박</td>
+          <td>logical read 폭증, CPU 100%</td>
+          <td>과도한 조인, 비효율 SQL</td>
+          <td>실행계획 / 조인 구조 점검</td>
+        </tr>
+        <tr>
+          <td>디스크 I/O 압박</td>
+          <td>physical read 폭증</td>
+          <td>풀스캔, 인덱스 미비</td>
+          <td>인덱스 / 통계 / 액세스 경로 점검</td>
+        </tr>
+        <tr>
+          <td>PGA / TEMP 압박</td>
+          <td>정렬·해시 느림, temp 사용 증가</td>
+          <td>대량 sort, hash join, 병렬 배치</td>
+          <td>PGA 정책 / temp TS / SQL 구조 점검</td>
+        </tr>
+        <tr>
+          <td>Tablespace 용량 압박</td>
+          <td>확장 실패, insert 실패</td>
+          <td>datafile 꽉 참, temp 부족, undo 부족</td>
+          <td>증설, autoextend 정책 검토, 사용량 분석</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="badge">8단계 · 실행계획 파악</div>
+      <h2>실행계획을 볼 때는 “접근 방식”과 “조인 방식”을 본다</h2>
+      <div class="flow">1. 느린 쿼리 발견
+2. 실행계획 확인
+3. Full Table Scan / Join 방식 / 예상 rows / 실제 rows 비교
+4. 병목 구간 찾기
+5. 인덱스 / SQL / 통계 / 힌트 순으로 조정</div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>가장 먼저 보는 것</h3>
+          <ul>
+            <li><code>TABLE ACCESS FULL</code> 많나?</li>
+            <li>조인 방식이 Nested Loop인지 Hash Join인지</li>
+            <li>옵티마이저 예상 rows와 실제 rows 차이가 큰지</li>
+            <li>필터가 인덱스를 못 타는 형태인지</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>실무 쿼리</h3>
+          <ul>
+            <li><code>DBMS_XPLAN.DISPLAY_CURSOR</code></li>
+            <li><code>AUTOTRACE</code></li>
+            <li><code>10046 trace</code> + <code>tkprof</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>핵심:</strong> 실행계획 튜닝은 코드를 예쁘게 바꾸는 게 아니라 <strong>데이터 접근 방식을 바꾸는 작업</strong>이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">9단계 · 과도한 조인과 병목 해소</div>
+      <h2>과도한 조인은 CPU와 I/O를 동시에 올릴 수 있다</h2>
+      <div class="flow">예시
+orders o
+JOIN users u       ON o.user_id = u.id
+JOIN products p    ON o.product_id = p.id
+JOIN categories c  ON p.category_id = c.id
+JOIN stores s      ON o.store_id = s.id
+JOIN regions r     ON s.region_id = r.id</div>
+
+      <div class="point">
+        <strong>문제:</strong> join이 많다고 무조건 나쁜 건 아니지만, 대용량 테이블에 불필요한 join이 붙으면 logical read와 physical read가 모두 증가하고, Nested Loop가 대량 데이터에 걸리면 CPU와 I/O를 동시에 잡아먹는다.
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>흔한 해결 방법</h3>
+          <ul>
+            <li>정말 필요한 테이블만 join</li>
+            <li><code>SELECT *</code> 대신 필요한 컬럼만</li>
+            <li>조인 컬럼 인덱스 점검</li>
+            <li>필요 시 <code>EXISTS</code>, 집계 선처리, 중간 결과 축소</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>추가 조정</h3>
+          <ul>
+            <li>통계 갱신으로 잘못된 계획 교정</li>
+            <li>최후 수단으로 힌트 검토</li>
+            <li>NL보다 Hash Join이 나은 대량 처리인지 판단</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">10단계 · 용량 확보와 운영</div>
+      <h2>실무에서 흔한 용량 확보 시나리오</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Users / Data TS 부족</h3>
+          <ul>
+            <li>insert 중 ORA-01653</li>
+            <li>datafile resize 또는 add datafile</li>
+            <li>segment 사용량 분석 후 증설</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>TEMP TS 부족</h3>
+          <ul>
+            <li>대량 sort, hash join, 배치</li>
+            <li>temp datafile 증설</li>
+            <li>배치용 계정 전용 temp TS 분리 검토</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>UNDO TS 부족</h3>
+          <ul>
+            <li>snapshot too old</li>
+            <li>undo retention과 undo TS 크기 함께 조정</li>
+            <li>보통 retention 3600초를 출발점으로 많이 본다</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Autoextend 정책</h3>
+          <ul>
+            <li>무제한 자동확장은 위험</li>
+            <li>상한(maxsize) 명확히 두기</li>
+            <li>직접 관리할지 자동확장에 맡길지 운영 철학 필요</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">11단계 · Direct Path Read 흔한 사례</div>
+      <h2>배치·병렬·대용량 스캔에서 자주 등장한다</h2>
+      <div class="point">
+        <strong>대표 사례:</strong> 월말 정산 배치, 대량 통계 집계, 리포트 생성, 병렬 full scan 같은 작업은 결과 집합이 너무 커서 버퍼 캐시에 매번 올리는 게 비효율적이다. 이런 경우 direct path read가 흔히 등장한다.
+      </div>
+      <div class="flow">대용량 테이블 full scan
+→ cache 오염시키지 않기 위해 direct path read 선택
+→ 필요 시 dirty buffer 정리 후 진행
+→ 배치 종료 후 일반 OLTP 트래픽과 분리 관찰</div>
+    </section>
+
+    <section class="section">
+      <div class="badge">12단계 · 실제 장애 시나리오</div>
+      <h2>자주 겪는 실무 장애를 원인과 해소로 연결</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>시나리오 1 · 조회가 갑자기 느려짐</h3>
+          <p><strong>증상:</strong> physical read 폭증</p>
+          <p><strong>원인:</strong> 인덱스 미사용, 풀스캔, 통계 불일치</p>
+          <p><strong>해소:</strong> 실행계획 확인, 인덱스 검토, SQL 조건식 수정</p>
+        </div>
+        <div class="card">
+          <h3>시나리오 2 · CPU 100%</h3>
+          <p><strong>증상:</strong> logical read 급증</p>
+          <p><strong>원인:</strong> 과도한 조인, 비효율 반복 SQL</p>
+          <p><strong>해소:</strong> 조인 구조 축소, 중간 결과 줄이기, SQL 튜닝</p>
+        </div>
+        <div class="card">
+          <h3>시나리오 3 · commit이 느림</h3>
+          <p><strong>증상:</strong> redo size 급증, log 관련 대기</p>
+          <p><strong>원인:</strong> DML 폭증, log switch 잦음</p>
+          <p><strong>해소:</strong> batch commit 조정, redo log size / group 재검토</p>
+        </div>
+        <div class="card">
+          <h3>시나리오 4 · 배치 중간 실패</h3>
+          <p><strong>증상:</strong> temp 부족 또는 undo 부족</p>
+          <p><strong>원인:</strong> sort / hash join / 긴 select</p>
+          <p><strong>해소:</strong> temp TS 증설, undo retention / TS 크기 조정</p>
+        </div>
+        <div class="card">
+          <h3>시나리오 5 · DB 멈춘 것처럼 보임</h3>
+          <p><strong>증상:</strong> switch는 나는데 재사용 못함</p>
+          <p><strong>원인:</strong> checkpoint not complete</p>
+          <p><strong>해소:</strong> redo log size 증설, checkpoint 부담 완화</p>
+        </div>
+        <div class="card">
+          <h3>시나리오 6 · DB가 안 올라옴</h3>
+          <p><strong>증상:</strong> control file / redo 경로 문제</p>
+          <p><strong>원인:</strong> 파라미터 값과 실제 파일 불일치</p>
+          <p><strong>해소:</strong> 경로 재확인, 실제 파일 복사, 적절한 기동 단계에서 수정</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">13단계 · 최종 요약</div>
+      <h2>이 문서를 어떻게 써먹으면 좋은가</h2>
+      <div class="summary">1. 느리다 / 멈춘다 / 실패한다 라는 말이 나오면
+   먼저 pressure 종류를 분류한다.
+
+2. v$sysstat은 한 번 찍지 말고
+   시간 차이로 증가량을 본다.
+
+3. logical read / physical read / redo / parse 중
+   무엇이 가장 많이 증가했는지로 방향을 잡는다.
+
+4. 그 다음 실행계획, 조인 구조, 인덱스, 통계,
+   commit 패턴, redo 구조, tablespace 용량을 본다.
+
+5. 해결은 “느린 부분을 손으로 때운다”가 아니라
+   데이터 접근 방식, 로그 생성 패턴, 파일/공간 정책을
+   바꾸는 방향으로 간다.
+
+결국 실무 DBA 관점의 병목 해소는
+CPU, 디스크, redo, temp, undo, 용량을
+분리해서 읽는 능력에서 시작한다.</div>
+    </section>
+  </div>
+</body>
+</html>

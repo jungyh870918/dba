@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 노트 008</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --warn-soft: #fff7ed;
+      --warn-line: #fed7aa;
+      --dark: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 34px; line-height: 1.3; }
+    .hero p { margin: 0; color: rgba(255,255,255,0.86); }
+    .nav {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .nav a { color: var(--accent); text-decoration: none; font-weight: 700; }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    h2 { margin: 0 0 14px; font-size: 28px; line-height: 1.35; }
+    h3 { margin: 24px 0 10px; font-size: 20px; line-height: 1.45; }
+    p { margin: 10px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #fff;
+    }
+    .flow, .summary {
+      background: var(--dark);
+      color: #f9fafb;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .warn {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .muted { color: var(--muted); font-size: 14px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 24px 0;
+    }
+    @media (max-width: 760px) {
+      body { padding: 24px 14px 60px; }
+      .grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 노트 008</h1>
+      <p>범위: PDF 70~85페이지 · Redo Log File / Group·Member / Current·Active·Inactive / Log Switch / Checkpoint / Tablespace 관리 / 동적 성능 뷰</p>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html">← 메인 인덱스로 돌아가기</a>
+    </nav>
+
+    <section class="section">
+      <div class="badge">1단계 · 이번 범위 전체 지도</div>
+      <h2>70~85페이지는 “DB 파일 구조 중 Redo Log와 Tablespace 운영”을 실제 DBA 관점으로 묶는 구간이다</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>70~82페이지 축</h3>
+          <ul>
+            <li>Redo Log의 목적과 Write Ahead Logging</li>
+            <li>DML / DDL / DCL과 로그 생성 관계</li>
+            <li>Redo Log Buffer → LGWR → Redo Log File 흐름</li>
+            <li>Redo Log Group / Member</li>
+            <li>Current / Active / Inactive 상태</li>
+            <li>Log Switch와 Checkpoint 관계</li>
+            <li><code>v$log</code>, <code>v$logfile</code> 조회</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>70~85페이지 후반 축</h3>
+          <ul>
+            <li>Control File과 Redo 경로 정보 관계</li>
+            <li>Dictionary View와 Dynamic Performance View 차이</li>
+            <li>CDB / PDB / 권한에 따라 조회 결과가 달라지는 이유</li>
+            <li>Tablespace 총량 / 여유공간 / 사용량 계산</li>
+            <li>Autoextend / Resize / Datafile 관리</li>
+            <li>Tablespace 삭제와 INCLUDING CONTENTS AND DATAFILES 의미</li>
+          </ul>
+        </div>
+      </div>
+      <div class="point">
+        <strong>핵심:</strong> 이 범위는 단순히 “redo가 있다” 수준이 아니라, <strong>commit, checkpoint, recovery, 용량 관리, 조회 뷰, 파일 재사용</strong>을 한 번에 묶어서 <strong>DBA가 실제로 운영 판단을 내리는 기준</strong>까지 연결하는 파트다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">2단계 · 변경과 로그</div>
+      <h2>DML / DDL / DCL은 왜 Redo와 연결되는가</h2>
+      <p>이 범위에서는 변경 작업이 발생하면 왜 로그가 필요한지부터 다시 잡고 넘어가야 한다. Oracle은 변경 내용을 datafile에 바로 반영하는 구조가 아니라, <strong>먼저 redo를 남기고 나중에 datafile에 반영</strong>하는 구조를 사용한다.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>DML</h3>
+          <ul>
+            <li><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></li>
+            <li>redo 생성</li>
+            <li>undo도 함께 생성되어 rollback / read consistency에 활용</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>DDL / DCL</h3>
+          <ul>
+            <li><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>GRANT</code>, <code>REVOKE</code></li>
+            <li>메타데이터 변경도 결국 redo 기록 대상</li>
+            <li>DDL은 내부 commit과 연결되므로 rollback 기대 금지</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flow">변경 발생
+→ Server Process가 redo 정보 생성
+→ Redo Log Buffer에 적재
+→ LGWR가 Redo Log File에 순차적으로 기록
+→ 필요 시 DBWR가 datafile에 dirty buffer 반영</div>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> redo는 트랜잭션별로 따로 나뉘어 파일에 저장되는 것이 아니다. 여러 세션과 여러 트랜잭션의 변경이 <strong>시간 순서대로 하나의 로그 스트림</strong>으로 이어져 기록된다. 즉, redo log group은 “트랜잭션 전용 통”이 아니라 <strong>시간 흐름 로그를 담는 파일 세트</strong>다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">3단계 · WAL / Commit / Recovery</div>
+      <h2>Write Ahead Logging과 Commit의 의미</h2>
+      <p>Oracle은 <strong>Write Ahead Logging</strong>을 지킨다. 즉, datafile보다 먼저 redo가 기록되어야 한다. 이것이 무너지면 장애 시 복구할 근거가 사라진다.</p>
+
+      <div class="flow">변경 발생
+→ Redo Log Buffer 기록
+→ LGWR가 Redo Log File에 flush
+→ commit 성공
+→ 이후 DBWR가 dirty buffer를 datafile에 기록</div>
+
+      <div class="point">
+        <strong>핵심:</strong> <strong>commit은 datafile 반영 완료를 뜻하지 않는다.</strong> commit은 redo가 안전하게 기록되었다는 보장에 더 가깝다. 그래서 datafile이 아직 최신이 아니어도 장애가 나면 redo를 읽어 roll forward 할 수 있다.
+      </div>
+
+      <div class="warn">
+        <strong>실무 해석:</strong> commit이 느리다면 DBWR보다 먼저 <strong>LGWR 병목, redo 생성량, log file sync 대기</strong>를 의심해야 한다. commit은 redo flush와 직접 연결되기 때문이다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">4단계 · Redo Log Group / Member</div>
+      <h2>Group은 논리 단위, Member는 물리 파일이다</h2>
+      <p>이 범위에서 가장 많이 헷갈리는 부분이 group과 member다. group은 <strong>LGWR가 현재 쓰는 논리적 redo 단위</strong>이고, member는 그 group을 구성하는 실제 OS 파일이다.</p>
+
+      <div class="flow">Group 1
+ ├ redo01.log
+ └ redo01_mirror.log
+
+Group 2
+ ├ redo02.log
+ └ redo02_mirror.log
+
+Group 3
+ ├ redo03.log
+ └ redo03_mirror.log</div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Group</h3>
+          <ul>
+            <li>논리 단위</li>
+            <li>LGWR가 한 번에 하나의 group에만 기록</li>
+            <li>가득 차면 다음 group으로 switch</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Member</h3>
+          <ul>
+            <li>물리 파일</li>
+            <li>동일한 redo 내용을 동시에 복제 저장</li>
+            <li>성능 목적이 아니라 안정성 목적</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> member를 같은 디스크에 두면 미러링 의미가 약하다. redo member는 <strong>서로 다른 디스크 경로</strong>에 둬야 한다. 이건 성능이 아니라 장애 대비를 위한 설계다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">5단계 · Current / Active / Inactive</div>
+      <h2>Redo Log 상태 3가지는 recovery 관점에서 해석해야 한다</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>CURRENT</h3>
+          <p>지금 LGWR가 기록 중인 group이다. 아직 쓰는 중이고, 아직 checkpoint로 완전히 정리되지 않은 최신 변경 흐름과 연결된다.</p>
+        </div>
+        <div class="card">
+          <h3>ACTIVE</h3>
+          <p>지금 쓰는 중은 아니지만 <strong>아직 recovery에 필요</strong>한 group이다. 즉, datafile이 이 redo 없이 완전히 복구 가능한 수준까지 따라잡지 못했다는 뜻이다.</p>
+        </div>
+        <div class="card">
+          <h3>INACTIVE</h3>
+          <p>현재 recovery를 위해 더 이상 필요하지 않은 group이다. 다시 덮어써도 되는 상태로 이해하면 된다.</p>
+        </div>
+        <div class="card">
+          <h3>핵심 해석</h3>
+          <p><strong>current → active → inactive</strong> 로 상태가 이동하는 흐름을 따라가면, redo 재사용과 checkpoint 진행 정도를 함께 읽을 수 있다.</p>
+        </div>
+      </div>
+
+      <div class="point">
+        <strong>핵심:</strong> active는 단순히 “예전에 썼던 로그”가 아니라, <strong>아직 인스턴스 리커버리의 출발점 계산에 필요할 수 있는 로그</strong>다. inactive는 그 필요성이 사라진 상태다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">6단계 · Log Switch와 Checkpoint</div>
+      <h2>왜 switch가 많아지면 checkpoint가 따라오고, 왜 그게 병목이 되는가</h2>
+      <p>log switch는 단순히 “다음 group으로 넘어가는 것”이다. 그런데 redo는 group을 순환해서 재사용한다. 그래서 언젠가 다시 돌아온 group을 덮어써야 한다. 이때 이전 redo가 datafile에 반영되지 않았다면 덮어쓰면 안 된다.</p>
+
+      <div class="flow">Group 1 사용
+→ Group 2 사용
+→ Group 3 사용
+→ 다시 Group 1 재사용 시점 도달
+→ 아직 이전 redo 반영 미완료
+→ checkpoint 필요
+→ DBWR가 dirty buffer를 datafile에 반영
+→ Group 1 재사용 가능</div>
+
+      <div class="point">
+        <strong>핵심:</strong> <strong>log switch 때문에 checkpoint가 생긴다기보다, redo를 안전하게 재사용하려면 checkpoint가 필요해지는 것</strong>이다. checkpoint는 “여기까지는 datafile이 따라잡았다”는 표시 역할을 한다.
+      </div>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> redo 생성 속도가 너무 빠르면 group이 빨리 돌고, checkpoint가 못 따라오면 <strong>Checkpoint not complete</strong> 같은 문제가 생길 수 있다. 이건 LGWR가 문제가 아니라, <strong>DBWR와 checkpoint 진행이 redo 생성 속도를 못 따라가는 구조적 병목</strong>에 가깝다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">7단계 · Dirty Buffer / LRU / Direct Path Read</div>
+      <h2>버퍼 캐시에서 pressure가 생긴다는 말의 뜻</h2>
+      <p>버퍼 캐시는 free buffer, dirty buffer, recently used block 등이 섞여 돌아간다. 메모에 적은 것처럼 블록 8KB 중 1바이트만 바뀌어도 dirty가 된다. free buffer가 부족하면 DBWR가 dirty buffer를 내려야 다음 작업이 진행된다.</p>
+
+      <div class="flow">데이터 읽기 / 쓰기 요청
+→ Buffer Cache 확인
+→ free buffer 부족
+→ dirty buffer flush 필요
+→ DBWR 동작
+→ 공간 확보 후 진행</div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>pressure의 의미</h3>
+          <p>빨리 내려야 할 dirty buffer가 쌓였는데 못 내리거나, redo를 덮어써야 하는데 checkpoint가 못 끝나서 다음 단계가 막히는 상태를 말한다.</p>
+        </div>
+        <div class="card">
+          <h3>Direct Path Read</h3>
+          <p>대용량 스캔, 배치, 병렬 처리처럼 cache를 오염시키기 싫은 상황에서 버퍼 캐시를 우회하고 디스크에서 직접 읽는 접근이다.</p>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>실무 사례:</strong> 배치 프로그램이 대용량 테이블을 풀스캔할 때 매번 캐시에 올리면 비효율적이다. 이때 direct path read가 흔히 등장한다. 또한 dirty buffer가 많이 남아 있으면 direct path read 전 정합성을 위해 flush가 먼저 필요한 상황이 생길 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">8단계 · 조회 뷰</div>
+      <h2>Dictionary View와 Dynamic Performance View는 목적이 다르다</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Dictionary View</h3>
+          <ul>
+            <li>정적 메타정보 조회</li>
+            <li><code>DBA_TABLES</code>, <code>CDB_TABLES</code>, <code>DBA_DATA_FILES</code>, <code>DBA_FREE_SPACE</code></li>
+            <li>구조, 권한, 파일, 오브젝트 정의 확인용</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Dynamic Performance View</h3>
+          <ul>
+            <li><code>V$</code> 계열</li>
+            <li>메모리 기반 현재 상태 조회</li>
+            <li>성능, 세션, redo, wait, 통계 확인용</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flow">예시
+<code>v$log</code>      → redo group 상태
+<code>v$logfile</code>  → redo member 경로
+<code>v$sysstat</code>  → logical read / physical read / redo size / parse 통계
+<code>dictionary</code> → 사전 뷰 목록 전체 확인</div>
+
+      <div class="point">
+        <strong>핵심:</strong> <code>V$</code>는 “지금 DB 내부가 어떻게 돌아가고 있는가”를 보는 창이다. 재기동하면 누적 값은 다시 시작한다. 따라서 성능 분석에서는 한 번 찍는 것보다 <strong>시간 차이로 증가량</strong>을 보는 것이 중요하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">9단계 · CDB / PDB / 권한</div>
+      <h2>같은 쿼리도 접속 위치와 권한에 따라 결과가 달라진다</h2>
+      <p>멀티테넌트 환경에서는 CDB에서 보이는 것과 PDB에서 보이는 것이 다르다. 여기에 권한까지 더해지면 같은 사전 뷰를 조회해도 결과가 달라진다.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>CDB에서</h3>
+          <ul>
+            <li><code>CDB_TABLES</code> 조회 시 여러 PDB의 정보가 함께 보일 수 있다</li>
+            <li>PDB 전체 상태를 관리할 때 사용</li>
+            <li><code>ALTER PLUGGABLE DATABASE ALL OPEN;</code> 같은 관리 작업은 CDB에서 수행</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>PDB에서</h3>
+          <ul>
+            <li>해당 PDB 범위만 보인다</li>
+            <li>일반 개발자가 느끼는 “현재 애플리케이션 DB”에 더 가깝다</li>
+            <li>잘못 들어가면 “테이블이 없다”, “정보가 안 보인다”는 오해 발생</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> CDB에 붙어 있다고 생각했는데 실제로는 다른 PDB에 들어가 있는 경우가 있다. 운영 중에는 <code>ORACLE_HOME</code>, <code>ORACLE_SID</code>, 현재 접속 컨테이너를 반드시 확인해야 한다. 안 그러면 엉뚱한 인스턴스나 PDB를 내리는 사고가 날 수 있다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">10단계 · Tablespace 용량 관리</div>
+      <h2>총량, 여유공간, 사용량을 계산하는 이유</h2>
+      <p>이 범위는 단순히 테이블스페이스를 만드는 법보다, <strong>운영 중 얼마나 차고 있는지, 늘려야 하는지, 자동확장 정책을 어떻게 둘지</strong>를 보는 파트다.</p>
+
+      <div class="flow"><code>dba_data_files</code>   → 총 용량
+<code>dba_free_space</code>  → 여유 공간
+총 용량 - 여유 공간 = 사용량
+
+<code>dba_segments</code>
+→ 어떤 segment가 공간을 쓰는지 확인
+→ tablespace 단위 group by 시 사용량 추적 가능</div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>실무에서 언제 보나</h3>
+          <ul>
+            <li>배치 전 용량 여유 점검</li>
+            <li>대량 적재 전 datafile 증설 판단</li>
+            <li>ORA-01653 류 오류 예방</li>
+            <li>Temp / Undo / Users TS 분리 운영</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>흔한 사례</h3>
+          <ul>
+            <li>정기 배치 때 temp 부족</li>
+            <li>undo retention 유지 못해서 snapshot too old</li>
+            <li>사용자 tablespace가 꽉 차서 insert 실패</li>
+            <li>개발 / 배치 계정별 temp TS 분리 운영</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        <strong>실무 감각:</strong> DBA는 total / free만 보는 게 아니라, <strong>누가 얼마나 쓰고 있는지</strong>까지 봐야 한다. 그래서 <code>dba_segments</code>로 segment 단위 사용량을 함께 보는 습관이 중요하다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">11단계 · Autoextend / Resize / 삭제</div>
+      <h2>자동확장과 수동관리 사이에서 운영 기준을 잡는 구간</h2>
+      <p>메모에서 강조했듯 autoextend를 무조건 켜두면 관리 편의는 있지만 의도하지 않은 공간 팽창이 일어날 수 있다. 반대로 끄면 DBA가 직접 상한과 증설 시점을 관리해야 한다.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Autoextend ON</h3>
+          <ul>
+            <li>자동 증가</li>
+            <li>운영 편하지만 무한 증가 위험</li>
+            <li>maxsize를 반드시 함께 고려</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Resize / 수동관리</h3>
+          <ul>
+            <li>큰 쪽으로 늘리는 것은 일반적</li>
+            <li>줄이는 것은 더 신중해야 함</li>
+            <li>운영에서는 상한과 증설 절차를 명확히 두는 편이 안정적</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flow">Tablespace 삭제 시
+→ <code>DROP TABLESPACE ... INCLUDING CONTENTS AND DATAFILES</code>
+→ 메타정보와 실제 파일을 함께 정리
+→ 나중에 OS에서 남은 파일 때문에 찜찜한 상태를 줄임</div>
+
+      <div class="point">
+        <strong>핵심:</strong> tablespace를 지운다고 모든 것이 끝나는 게 아니다. Oracle이 아직 파일 정보를 잡고 있으면 OS에서 바로 정리하기 곤란한 경우가 생길 수 있다. 그래서 이 범위에서 INCLUDING CONTENTS AND DATAFILES 옵션이 같이 강조된다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">12단계 · 실제 확인 쿼리</div>
+      <h2>이번 범위에서 바로 손으로 쳐볼 조회</h2>
+      <div class="flow">-- Redo group 상태
+SELECT group#, sequence#, bytes, members, archived, status
+FROM v$log;
+
+-- Redo member 경로
+SELECT group#, member
+FROM v$logfile;
+
+-- 강제 log switch
+ALTER SYSTEM SWITCH LOG;
+
+-- Tablespace 총량
+SELECT tablespace_name, file_name, bytes
+FROM dba_data_files;
+
+-- Tablespace 여유공간
+SELECT tablespace_name, bytes
+FROM dba_free_space;
+
+-- Segment 사용량
+SELECT tablespace_name, segment_type, SUM(bytes)
+FROM dba_segments
+GROUP BY tablespace_name, segment_type;</div>
+
+      <div class="warn">
+        <strong>실무 포인트:</strong> 조회 결과가 이상하면, 단순히 “DB가 이상하다”가 아니라 <strong>현재 CDB/PDB 위치, 권한, 경로 일치 여부, 실제 파일 존재 여부</strong>까지 같이 확인해야 한다.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="badge">13단계 · 이번 범위 핵심 요약</div>
+      <h2>70~85페이지 전체 요약</h2>
+      <div class="summary">Redo는 트랜잭션별 전용 파일이 아니라 시간 순서대로 이어지는 변경 로그 스트림이다.
+
+Redo Log Group은 이 스트림을 담는 논리 단위이고,
+Member는 그 group을 구성하는 물리 파일이다.
+
+LGWR는 현재 group에 순차적으로 기록하고,
+다 차면 다음 group으로 switch 한다.
+
+하지만 group은 순환해서 다시 써야 하므로,
+이전 redo가 datafile에 아직 반영되지 않았다면
+checkpoint가 필요해진다.
+
+checkpoint는 파일이 아니라
+"여기까지는 datafile이 따라잡았다"는 상태 표시이며,
+control file과 datafile header의 SCN과 연결된다.
+
+current / active / inactive 상태는
+단순히 예전에 쓴 로그 구분이 아니라
+recovery에 아직 필요한지 여부까지 포함하는 운영 의미를 가진다.
+
+후반부에서는 dictionary view와 dynamic performance view 차이,
+CDB/PDB 및 권한에 따른 조회 결과 차이,
+그리고 tablespace 총량 / 여유공간 / 사용량 / autoextend / 삭제 정책까지 묶어서
+실제 DBA 운영 판단 기준을 다룬다.
+
+즉 이 범위의 본질은
+"redo와 checkpoint로 정합성을 지키고,
+view와 파일/용량 관리를 통해 운영 상태를 통제하는 법"이다.</div>
+    </section>
+  </div>
+</body>
+</html>
