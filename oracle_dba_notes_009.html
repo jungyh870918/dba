@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Oracle DBA 96~111페이지 정리 + 보완 포인트 + Tablespace 장애 시나리오</title>
+<style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --dark: #0f172a;
+      --warn-bg: #fff7ed;
+      --warn-line: #fed7aa;
+      --good-bg: #ecfdf5;
+      --good-line: #a7f3d0;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      line-height: 1.78;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 20px 80px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      border-radius: 28px;
+      padding: 38px;
+      box-shadow: 0 24px 44px rgba(15, 23, 42, 0.22);
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,.9);
+    }
+    .toc, .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    .toc {
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .toc ul {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      columns: 2;
+      column-gap: 28px;
+    }
+    .toc li { margin: 6px 0; }
+    .section {
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      letter-spacing: 0.02em;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.35;
+    }
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 21px;
+      line-height: 1.45;
+    }
+    h4 {
+      margin: 18px 0 8px;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+    p { margin: 10px 0; }
+    ul, ol {
+      margin: 10px 0;
+      padding-left: 22px;
+    }
+    li { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .point, .warn, .good {
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+    }
+    .warn {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+    }
+    .good {
+      background: var(--good-bg);
+      border: 1px solid var(--good-line);
+    }
+    .flow, .sql, .log, .summary {
+      background: var(--dark);
+      color: #f8fafc;
+      border-radius: 16px;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      margin: 14px 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 800;
+    }
+    tr:last-child td { border-bottom: none; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #eef2f7;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: .95em;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 22px 0;
+    }
+    .page-box {
+      border-left: 5px solid var(--accent);
+      padding-left: 16px;
+      margin: 18px 0 22px;
+    }
+    @media (max-width: 900px) {
+      .grid, .grid-3, .toc ul { grid-template-columns: 1fr; columns: 1; }
+    }
+    @media (max-width: 760px) {
+      .wrap { padding: 24px 14px 56px; }
+      .hero { padding: 28px; }
+      .hero h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+      h3 { font-size: 19px; }
+      .section { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<h1>Oracle DBA 96~111페이지 정리 + 보완 포인트 + Tablespace 장애 시나리오</h1>
+<p>데이터 파일과 테이블스페이스 파트 전체 리뷰, 놓쳤던 포인트 보완, 실제 장애 케이스와 대응 흐름, 로그 분석 관점까지 한 번에 묶은 정리본</p>
+<p class="muted" style="color:rgba(255,255,255,.82)">대상 범위: PDF 96~111페이지 / 반영 요소: 교재 본문, 중간 메모, 보완 질의, 장애 사례 정리</p>
+
+</header>
+<div style="margin:20px 0;padding:12px 16px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;"><a href="index.html" style="text-decoration:none;font-weight:700;color:#1d4ed8;">← 메인 인덱스로 돌아가기</a></div>
+<section class="toc">
+<strong>목차</strong>
+<ul>
+<li>1. 이 구간의 위치와 읽는 관점</li>
+<li>2. 96~111페이지 페이지별 정리</li>
+<li>3. 처음 정리에서 빠졌던 보완 포인트</li>
+<li>4. 실무에서 바로 써먹는 핵심 관계 정리</li>
+<li>5. Tablespace 터지는 실제 케이스</li>
+<li>6. 장애 발생 시 공통 판단 흐름</li>
+<li>7. 실제 장애 시나리오 로그 분석</li>
+<li>8. DBA가 매일 확인할 체크 포인트</li>
+<li>9. 최종 요약</li>
+</ul>
+</section>
+<section class="section">
+<div class="badge">1단계 · 전체 위치</div>
+<h2>이 범위는 “실제 데이터와 작업 공간이 어디에 저장되는가”를 설명하는 구간이다</h2>
+<p>앞에서 control file과 redo log를 통해 <strong>DB 엔진이 자신을 어떻게 기동하고 복구하는지</strong>를 배웠다면, 96~111페이지는 그 다음 단계로 <strong>실제 사용자 데이터, 시스템 메타정보, 정렬용 작업공간</strong>이 어디에 놓이는지를 설명하는 파트다.</p>
+<div class="flow">Control File / Redo Log 이해
+→ Data File / Tablespace 구조 이해
+→ SYSTEM / SYSAUX / UNDO / TEMP / 사용자 TS 역할 구분
+→ 사용자별 Temp 할당과 Temp Group 운영
+→ 이후 용량 관리, 증설, 삭제, 장애 대응으로 연결</div>
+<div class="point"><strong>핵심:</strong> 이 구간의 본질은 “파일 하나하나를 외우는 것”이 아니라, <strong>논리 저장 단위(Tablespace)와 물리 파일(Datafile)을 분리해서 보는 눈</strong>을 만드는 데 있다.</div>
+</section>
+<section class="section">
+<div class="badge">2단계 · 페이지별 정리</div>
+<h2>96~111페이지 교재 내용 전체 리뷰</h2>
+<div class="page-box">
+<h3>96페이지 · Data File</h3>
+<p>데이터 파일은 <strong>테이블스페이스에 종속</strong>되어 있으며, 하나의 Tablespace는 <strong>하나 이상의 데이터 파일</strong>로 구성될 수 있다. 또한 Data File은 <code>CREATE TABLESPACE</code> 또는 <code>ALTER TABLESPACE ADD DATAFILE</code> 명령으로 생성된다.</p>
+<div class="flow">논리 단위 = Tablespace
+물리 단위 = Data File
+
+Tablespace 1개
+→ Datafile 1개 이상으로 구성 가능</div>
+<div class="point"><strong>실무 의미:</strong> DB에서 보이는 Tablespace와 OS에서 보이는 파일은 다르다. DBA는 “논리적 관리 대상”과 “물리적 관리 대상”을 동시에 봐야 한다.</div>
+</div>
+<div class="page-box">
+<h3>97페이지 · Tablespace 개요와 종류</h3>
+<p>Tablespace는 <strong>테이블, 인덱스, 파티션 등의 Segment가 저장되는 논리적인 저장 단위</strong>이며, 데이터 파일의 물리적 확장 한계를 극복하기 위한 구조다.</p>
+<table>
+<thead>
+<tr>
+<th>종류</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SYSTEM</strong></td>
+<td>DB 스키마 구조, DB Dictionary 저장</td>
+</tr>
+<tr>
+<td><strong>SYSAUX</strong></td>
+<td>AWR, ASH 등 튜닝을 위한 정보 저장</td>
+</tr>
+<tr>
+<td><strong>UNDO</strong></td>
+<td>데이터 변경 전 정보를 저장하고 rollback에 활용</td>
+</tr>
+<tr>
+<td><strong>TEMPORARY</strong></td>
+<td>Sort, Hash Join 작업 시 사용하며 PGA가 넘칠 때 활용</td>
+</tr>
+<tr>
+<td><strong>사용자 Tablespace</strong></td>
+<td>업무용 테이블, 인덱스 등 사용자가 만든 객체 저장</td>
+</tr>
+</tbody>
+</table>
+<div class="warn"><strong>중요:</strong> 모든 Tablespace를 같은 종류의 “디스크 공간”으로 보면 안 된다. 각각 목적이 다르고, 터졌을 때 영향 범위도 다르다.</div>
+</div>
+<div class="page-box">
+<h3>98페이지 · System Tablespace</h3>
+<p>SYSTEM Tablespace는 <strong>Create Database 시 생성</strong>되며, <strong>데이터 딕셔너리</strong>가 저장된다. <code>dictionary</code> view를 통해 확인할 수 있다.</p>
+<p>주요 저장 내용은 다음과 같다.</p>
+<ul>
+<li>데이터베이스의 논리적, 물리적 구조</li>
+<li>객체 정의와 공간 사용 정보</li>
+<li>제약조건 정보</li>
+<li>사용자 정보</li>
+<li>Role 및 Privilege 정보</li>
+<li>감사 및 보안 정보</li>
+</ul>
+<div class="point"><strong>실무 감각:</strong> SYSTEM은 “일반 데이터 저장소”가 아니라 오라클이 자기 자신을 설명하는 핵심 메타정보 저장소다. 여기 문제가 생기면 단순 업무 테이블 장애가 아니라 DB 자체 운영이 흔들린다.</div>
+</div>
+<div class="page-box">
+<h3>99페이지 · Dictionary View</h3>
+<p>Dictionary View는 <strong>System Tablespace에 저장된 데이터 딕셔너리 내용</strong>을 일반 사용자도 볼 수 있도록 View로 제공한 것이다. Base Table은 존재하며 owner는 <code>SYS</code>다. System Tablespace에 저장되므로 인스턴스가 <strong>Open 상태일 때 조회 가능</strong>하다.</p>
+<ul>
+<li><code>CDB_xxx</code> : CDB 포함 모든 PDB Dictionary 정보 조회</li>
+<li><code>DBA_xxx</code> : DBA Role이 있어야 조회 가능, 모든 Dictionary 정보 조회</li>
+<li><code>ALL_xxx</code> : 본인이 access 가능한 정보 조회</li>
+<li><code>USER_xxx</code> : 본인이 owner인 정보 조회</li>
+</ul>
+<div class="flow">같은 객체라도
+CDB_xxx / DBA_xxx / ALL_xxx / USER_xxx
+→ 접속 위치와 권한에 따라 결과가 달라진다</div>
+<div class="warn"><strong>실무 포인트:</strong> “같은 테이블을 조회했는데 왜 안 보이지?”는 권한 문제일 수도 있고, CDB/PDB 위치 문제일 수도 있다.</div>
+</div>
+<div class="page-box">
+<h3>100페이지 · Dynamic Performance View</h3>
+<p>Dynamic Performance View는 <strong>인스턴스 기동 이후의 통계 정보</strong>를 보여준다. Nomount부터 Open 단계까지 조회 가능 범위가 다르다.</p>
+<ul>
+<li>Nomount 단계: <code>v$instance</code> 조회 가능</li>
+<li>Mount 단계: <code>v$database</code>, <code>v$datafile</code>, <code>v$controlfile</code> 등 조회 가능</li>
+<li>Open 단계: 모든 뷰 조회 가능</li>
+</ul>
+<p>또한 인스턴스를 재기동하면 값이 clear되며, 주로 성능 관련 정보가 저장된다. 예시로 <code>v$statistics</code>, <code>v$session</code>, <code>v$session_wait</code>, <code>v$system_event</code> 등이 있다.</p>
+<div class="point"><strong>교재 연결 포인트:</strong> 10g부터 존재하는 ASH, AWR, ADDM 관련 view는 수집된 정보를 SYSAUX Tablespace에 저장한다.</div>
+</div>
+<div class="page-box">
+<h3>101페이지 · Sysaux Tablespace</h3>
+<p>SYSAUX Tablespace는 10g 버전부터 등장한 보조 시스템 Tablespace다. 저장되는 대표 정보는 다음과 같다.</p>
+<ul>
+<li>AWR (Auto Workload Repository)</li>
+<li>ADDM (Automatic Database Diagnostic Monitor)</li>
+<li>ASH (Active Session History)</li>
+</ul>
+<div class="warn"><strong>보완 포인트:</strong> 처음 정리에서는 이 페이지를 지나가듯 다뤘지만, 실무에서는 꽤 중요하다. 성능 진단 정보가 쌓이는 공간이므로 SYSAUX가 비정상적으로 커지는 경우 튜닝/보존 정책을 같이 봐야 한다.</div>
+</div>
+<div class="page-box">
+<h3>102페이지 · Temporary Tablespace 개념</h3>
+<p>SQL 수행 중 Sort 또는 Hash Join 시 PGA의 sort 영역과 hash 영역을 사용한다. 이때 관련 파라미터는 <code>sort_area_size</code>, <code>hash_area_size</code>를 조회할 수 있다. 그리고 PGA의 해당 영역에 <strong>overflow</strong>가 발생하면 Temporary Tablespace를 활용한다.</p>
+<p>또한 <strong>사용자별로 Temporary Tablespace 지정 가능</strong>하며, 다음 조회문으로 확인한다.</p>
+<div class="sql">select username, temporary_tablespace from dba_users;</div>
+<div class="point"><strong>핵심:</strong> TEMP는 undo와 다르다. TEMP는 정렬/해시 같은 작업 공간이고, undo는 이전 버전 보관과 rollback/consistent read 쪽이다.</div>
+</div>
+<div class="page-box">
+<h3>103페이지 · CDB 전체 Temp 파일 조회 및 신규 Temp 생성</h3>
+<p><code>cdb_temp_files</code>를 통해 전체 컨테이너의 temp 파일을 조회한다. 예시에서는 CDB 루트와 ORCLPDB 각각에 10GB TEMP가 보인다. 이어서 <code>ts_temp2</code>라는 새 Temporary Tablespace를 생성한다.</p>
+<div class="sql">select con_id, file_name, tablespace_name, round(bytes/1024/1024) mbytes
+from cdb_temp_files;
+
+create temporary tablespace ts_temp2
+ tempfile 'C:\APP\SEO\ORADATA\ORCL\ORCLPDB\TS_TEMP02.DBF' size 50m;
+
+alter session set container=orclpdb;</div>
+<div class="point"><strong>실무 의미:</strong> 멀티테넌트 환경에서는 먼저 어느 컨테이너에 있는 파일인지 봐야 한다. CDB에서 볼 때와 PDB에 들어가서 볼 때 결과가 달라진다.</div>
+</div>
+<div class="page-box">
+<h3>104페이지 · PDB 기준 Temp 파일 확인</h3>
+<p><code>dba_temp_files</code>로 현재 PDB 관점에서 TEMP 파일을 조회한다. 이 시점에는 기존 TEMP 10GB와 새로 생성한 <code>TS_TEMP2</code> 50MB가 함께 조회된다.</p>
+<div class="sql">select con_id, file_name, tablespace_name, round(bytes/1024/1024) mbytes
+from dba_temp_files;</div>
+<div class="good"><strong>중요:</strong> 103페이지는 CDB 전체 관점, 104페이지는 현재 PDB 관점이다. 이 차이를 실제로 느끼는 구간이다.</div>
+</div>
+<div class="page-box">
+<h3>105페이지 · 사용자별 Temporary Tablespace 변경</h3>
+<p><code>dba_users</code>에서 SYSTEM과 SCOTT의 temporary tablespace를 조회하면 처음에는 둘 다 TEMP를 사용한다. 이후 <code>alter user scott temporary tablespace ts_temp2;</code>로 SCOTT의 Temp를 <code>TS_TEMP2</code>로 변경하고 다시 조회해 확인한다.</p>
+<div class="sql">select username, temporary_tablespace
+from dba_users
+where username in ('SYSTEM', 'SCOTT');
+
+alter user scott temporary tablespace ts_temp2;
+
+select username, temporary_tablespace
+from dba_users
+where username in ('SYSTEM', 'SCOTT');</div>
+<div class="point"><strong>실무 포인트:</strong> TEMP는 사용자별로 다르게 줄 수 있다. 온라인 계정과 배치 계정에 다른 TEMP를 주는 운영 전략과 연결된다.</div>
+</div>
+<div class="page-box">
+<h3>106페이지 · Temporary Tablespace Group 개념</h3>
+<p>교재는 SCOTT 계정으로 동시에 여러 개 배치 작업 수행 시 하나의 Temporary Tablespace에 부하가 몰릴 수 있다고 설명한다. 그래서 <strong>분산 목적</strong>으로 여러 Temporary Tablespace를 만들고 그룹화한다. 하나의 임시 테이블스페이스를 주는 대신 <strong>임시 테이블스페이스 그룹</strong>을 할당하면, SCOTT 계정이 여러 개 임시 테이블스페이스를 활용하게 된다.</p>
+<div class="flow">TEMP + TS_TEMP2 (+ TS_TEMP3)
+→ TEMP_GRP로 묶음
+→ 사용자에게 TEMP_GRP 할당
+→ 여러 임시 테이블스페이스를 분산 활용</div>
+<div class="warn"><strong>처음 놓쳤던 포인트:</strong> Group은 단순 편의 기능이 아니라 <strong>부하 분산 목적</strong>이 있다. 특히 batch나 대형 sort 작업에서 의미가 커진다.</div>
+</div>
+<div class="page-box">
+<h3>107페이지 · Temp와 Temp Group 현재 상태 조회</h3>
+<p>먼저 SYSTEM과 SCOTT의 temporary tablespace를 조회하면 SCOTT은 TS_TEMP2를 사용 중이다. 이어서 <code>dba_tablespaces</code>에서 temporary tablespace 목록을 확인하고, <code>dba_tablespace_groups</code>에서는 아직 그룹이 없음을 확인한다.</p>
+<div class="sql">select username, temporary_tablespace
+from dba_users
+where username in ('SYSTEM', 'SCOTT');
+
+select tablespace_name, contents
+from dba_tablespaces
+where contents = 'TEMPORARY';
+
+select group_name, tablespace_name
+from dba_tablespace_groups;</div>
+<div class="point"><strong>흐름상 의미:</strong> 그룹을 만들기 전에 현재 개별 Temp와 사용자 할당 상태를 먼저 확인하는 단계다.</div>
+</div>
+<div class="page-box">
+<h3>108페이지 · Temp Group 생성</h3>
+<p><code>TEMP</code>와 <code>TS_TEMP2</code>를 <code>TEMP_GRP</code>라는 Temporary Tablespace Group으로 묶는다. 이후 <code>dba_tablespace_groups</code>로 그룹 구성 결과를 조회한다.</p>
+<div class="sql">alter tablespace temp tablespace group temp_grp;
+alter tablespace ts_temp2 tablespace group temp_grp;
+
+select group_name, tablespace_name
+from dba_tablespace_groups;</div>
+<div class="good"><strong>핵심:</strong> Group은 사용자에게 할당하기 전에 먼저 구성 자체를 만들어야 한다.</div>
+</div>
+<div class="page-box">
+<h3>109페이지 · 사용자에게 Temp Group 할당</h3>
+<p>이제 SCOTT 계정의 temporary tablespace를 개별 TS가 아니라 <code>TEMP_GRP</code>로 변경한다. 다시 <code>dba_users</code>를 조회하면 SCOTT의 TEMPORARY_TABLESPACE가 <code>TEMP_GRP</code>로 바뀐다.</p>
+<div class="sql">alter user scott temporary tablespace temp_grp;
+
+select username, temporary_tablespace
+from dba_users
+where username in ('SYSTEM', 'SCOTT');</div>
+<div class="point"><strong>실무 포인트:</strong> 사용자에게 group을 할당하면 내부적으로 여러 temp tablespace를 활용할 수 있다.</div>
+</div>
+<div class="page-box">
+<h3>110페이지 · 개별 Temp로 원복</h3>
+<p>SCOTT의 temporary tablespace를 다시 <code>TEMP</code>로 바꾼다. 즉 group 사용에서 벗어나 다시 개별 temporary tablespace를 쓰도록 되돌리는 단계다.</p>
+<div class="sql">alter user scott temporary tablespace temp;
+
+select username, temporary_tablespace
+from dba_users
+where username in ('SYSTEM', 'SCOTT');</div>
+</div>
+<div class="page-box">
+<h3>111페이지 · Temp Group 해제</h3>
+<p><code>TS_TEMP2</code>와 <code>TEMP</code>를 group에서 빼고, <code>dba_tablespace_groups</code> 조회 결과가 없어짐을 확인한다.</p>
+<div class="sql">alter tablespace ts_temp2 tablespace group '';
+alter tablespace temp tablespace group '';
+
+select group_name, tablespace_name
+from dba_tablespace_groups;</div>
+<div class="point"><strong>핵심:</strong> 교재는 Temp Group을 “생성 → 사용자 할당 → 원복 → 그룹 해제”까지 한 사이클로 보여준다.</div>
+</div>
+</section>
+<section class="section">
+<div class="badge">3단계 · 내가 놓쳤던 부분 보완</div>
+<h2>처음 정리 뒤에 사용자가 환기시켜준 포인트들</h2>
+<p>처음 정리에서 큰 줄기는 맞았지만, 교재 기준으로 보면 아래 포인트들은 더 분명하게 짚었어야 했다.</p>
+<div class="grid">
+<div class="card">
+<h3>① SYSAUX의 실무적 중요성</h3>
+<p>처음에는 SYSTEM의 보조 정도로 지나갔지만, 교재는 AWR/ASH/ADDM 등 성능 진단 정보 저장소로 분명히 분리해 설명한다. 따라서 SYSAUX 증가는 단순 용량 문제가 아니라 진단 데이터 누적과 연결해서 봐야 한다.</p>
+</div>
+<div class="card">
+<h3>② Tablespace가 물리 한계 극복용 abstraction이라는 점</h3>
+<p>Tablespace는 그냥 “논리 단위”가 아니라, 여러 datafile을 묶어 물리적 확장성의 한계를 넘는 계층이다. 이 설계 의도를 잡아야 add datafile, total/free/used 계산이 자연스럽다.</p>
+</div>
+<div class="card">
+<h3>③ Segment ↔ Tablespace ↔ Datafile 관계</h3>
+<p>세그먼트는 파일 그 자체가 아니라 extent들의 집합이다. 따라서 하나의 segment는 여러 datafile에 걸쳐 존재할 수 있고, 하나의 datafile 안에는 여러 segment가 공존한다.</p>
+</div>
+<div class="card">
+<h3>④ Default Tablespace / Temporary Tablespace의 분리 의미</h3>
+<p>유저 생성 시 default tablespace는 객체 저장 위치, temporary tablespace는 작업 공간을 지정한다. 저장 위치와 작업 공간을 분리해서 설계한다는 관점이 중요하다.</p>
+</div>
+<div class="card">
+<h3>⑤ Temp Group의 목적은 분산</h3>
+<p>Group은 단순 묶음이 아니라 하나의 Temp에 부하가 집중되는 걸 분산하기 위한 구조다. 특히 동시에 여러 배치 작업이 붙는 경우를 염두에 둔 설계다.</p>
+</div>
+<div class="card">
+<h3>⑥ SYSTEM은 절대 일반 TS처럼 다루면 안 됨</h3>
+<p>SYSTEM은 dictionary와 메타정보 저장소이므로 일반 업무 TS와 같은 감각으로 “차면 늘리고, 비우고” 수준으로 보면 안 된다. 영향 범위가 DB 전체다.</p>
+</div>
+</div>
+</section>
+<section class="section">
+<div class="badge">4단계 · 핵심 구조 정리</div>
+<h2>이 범위를 실무형으로 묶으면 반드시 기억해야 할 관계</h2>
+<div class="flow">Tablespace = 논리 저장 단위
+Datafile   = 물리 파일
+Segment    = table / index 같은 객체의 저장 영역
+Extent     = Segment를 이루는 블록 묶음
+Block      = I/O 최소 단위
+
+즉
+Tablespace
+ └ Datafile 1개 이상
+    └ 여러 Segment가 공존
+       └ Segment는 여러 Extent의 집합
+          └ Extent는 특정 Datafile 위에 존재</div>
+<div class="grid-3">
+<div class="card">
+<h3>시스템 메타정보</h3>
+<ul>
+<li>SYSTEM → Dictionary</li>
+<li>SYSAUX → AWR / ASH / ADDM</li>
+</ul>
+</div>
+<div class="card">
+<h3>정합성 / 작업공간</h3>
+<ul>
+<li>UNDO → rollback, read consistency, recovery 연결</li>
+<li>TEMP → sort / hash / PGA overflow 대응</li>
+</ul>
+</div>
+<div class="card">
+<h3>사용자 데이터</h3>
+<ul>
+<li>사용자 TS → 업무 테이블, 인덱스, 파티션</li>
+<li>default tablespace로 저장 위치 설계</li>
+</ul>
+</div>
+</div>
+<div class="warn"><strong>교재를 넘어서 실무 감각으로 보면:</strong> Tablespace가 터졌다는 건 단순히 “디스크가 부족하다”가 아니라, SQL/배치/트랜잭션/정책 어느 한 곳에서 비정상 흐름이 생겼다는 신호다.</div>
+</section>
+<section class="section">
+<div class="badge">5단계 · 장애 사례</div>
+<h2>Tablespace 터지는 실제 케이스 + 대응 방법</h2>
+<h3>Case 1. 사용자 Data Tablespace Full</h3>
+<div class="log">증상 예시
+ORA-01653: unable to extend table ... in tablespace USERS
+ORA-01654: unable to extend index ... in tablespace USERS</div>
+<div class="grid">
+<div class="card">
+<h4>주요 원인</h4>
+<ul>
+<li>datafile이 꽉 참</li>
+<li>autoextend가 꺼져 있음</li>
+<li>maxsize까지 도달함</li>
+<li>비정상 대량 적재 또는 인덱스 급증</li>
+</ul>
+</div>
+<div class="card">
+<h4>긴급 대응</h4>
+<div class="sql">-- 빠른 응급조치
+ALTER DATABASE DATAFILE '경로' RESIZE 30G;
+
+-- 일반적으로 더 권장되는 방식
+ALTER TABLESPACE users ADD DATAFILE '경로' SIZE 10G;</div>
+</div>
+</div>
+<div class="point"><strong>근본 대응:</strong> 단순히 늘리고 끝내지 말고, 어떤 segment가 급증했는지 <code>dba_segments</code>로 확인해야 한다.</div>
+<div class="divider"></div>
+<h3>Case 2. Temporary Tablespace Full</h3>
+<div class="log">증상 예시
+ORA-01652: unable to extend temp segment by 128 in tablespace TEMP</div>
+<div class="grid">
+<div class="card">
+<h4>주요 원인</h4>
+<ul>
+<li>대형 sort / hash join</li>
+<li>PGA overflow</li>
+<li>카테시안 조인, 잘못된 배치 SQL</li>
+<li>동시 배치 작업 집중</li>
+</ul>
+</div>
+<div class="card">
+<h4>긴급 대응</h4>
+<div class="sql">ALTER TABLESPACE temp
+ADD TEMPFILE '경로' SIZE 10G;</div>
+</div>
+</div>
+<div class="warn"><strong>핵심:</strong> TEMP를 늘리는 건 응급처치일 뿐이다. 근본 원인은 대개 SQL, 조인 방식, 정렬량, 배치 동시성에 있다.</div>
+<div class="divider"></div>
+<h3>Case 3. Undo Tablespace 부족</h3>
+<div class="log">증상 예시
+ORA-01555: snapshot too old</div>
+<div class="grid">
+<div class="card">
+<h4>주요 원인</h4>
+<ul>
+<li>undo retention 부족</li>
+<li>undo tablespace 공간 부족</li>
+<li>긴 조회와 많은 DML이 겹침</li>
+</ul>
+</div>
+<div class="card">
+<h4>긴급 대응</h4>
+<div class="sql">ALTER TABLESPACE undotbs1 ADD DATAFILE '경로' SIZE 5G;
+ALTER SYSTEM SET undo_retention = 7200;</div>
+</div>
+</div>
+<div class="point"><strong>주의:</strong> retention만 늘리고 공간을 안 늘리면 의미가 없을 수 있다. retention 정책과 undo TS 크기는 같이 봐야 한다.</div>
+<div class="divider"></div>
+<h3>Case 4. SYSAUX 비정상 증가</h3>
+<div class="log">증상 예시
+SYSAUX 사용량이 지속적으로 증가
+AWR snapshot 누적으로 디스크 압박</div>
+<div class="grid">
+<div class="card">
+<h4>주요 원인</h4>
+<ul>
+<li>AWR snapshot 보존기간이 김</li>
+<li>ASH / ADDM 데이터 누적</li>
+<li>진단 데이터 정리가 느슨함</li>
+</ul>
+</div>
+<div class="card">
+<h4>대응 방향</h4>
+<ul>
+<li>어떤 component가 커지는지 확인</li>
+<li>AWR 보존 정책 조정</li>
+<li>무작정 파일만 늘리지 말고 원인 파악</li>
+</ul>
+</div>
+</div>
+<div class="divider"></div>
+<h3>Case 5. SYSTEM Tablespace 문제</h3>
+<div class="log">증상 예시
+Dictionary 관련 에러
+메타데이터 작업 이상
+DB 전체 운영 불안정</div>
+<p>SYSTEM은 일반 업무 Tablespace와 다르게 다뤄야 한다. 여기 문제는 단순 업무 객체 장애가 아니라 DB 자체 정보 계층의 문제로 번질 수 있다.</p>
+<div class="warn"><strong>원칙:</strong> SYSTEM 문제는 “파일 하나 더 붙이면 되겠지” 식으로 접근하면 안 된다. 왜 그쪽에 데이터가 쌓였는지, 비정상 객체 생성은 없는지, 운영 정책이 맞는지까지 같이 봐야 한다.</div>
+</section>
+<section class="section">
+<div class="badge">6단계 · 공통 판단 흐름</div>
+<h2>장애가 터졌을 때 DBA가 움직이는 기본 순서</h2>
+<div class="flow">1. 에러코드 확인
+   → ORA-01653 / ORA-01652 / ORA-01555 등
+
+2. 어떤 종류의 Tablespace인지 확인
+   → 사용자 DATA / TEMP / UNDO / SYSAUX / SYSTEM
+
+3. 현재 용량과 여유공간 확인
+   → dba_data_files / dba_temp_files / dba_free_space
+
+4. 누가 많이 쓰는지 확인
+   → dba_segments / 세션 / SQL / 배치 시간대
+
+5. 긴급 조치
+   → add datafile / add tempfile / retention 조정 등
+
+6. 근본 원인 분석
+   → 비정상 SQL / 대량 배치 / 정책 부재 / 관리 부실
+
+7. 재발 방지
+   → 상한선, 증설 기준, 모니터링, 계정별 분리, 정리 정책</div>
+<div class="point"><strong>핵심 태도:</strong> 초보는 공간을 늘리고 끝낸다. 실무 DBA는 <strong>왜 늘어났는지</strong>를 끝까지 본다.</div>
+</section>
+<section class="section">
+<div class="badge">7단계 · 로그 분석</div>
+<h2>실제 장애 시나리오 로그 분석 예시</h2>
+<p>아래는 교재의 개념을 바탕으로, 운영에서 흔히 볼 수 있는 형태로 재구성한 장애 로그와 해석 흐름이다. 핵심은 <strong>에러문 자체보다 앞뒤 맥락</strong>을 읽는 것이다.</p>
+<h3>시나리오 A · 배치 중 TEMP 부족</h3>
+<div class="log">[alert log 예시]
+2026-04-10 01:12:03 Batch job START : daily_sales_summary
+2026-04-10 01:13:44 ORA-01652: unable to extend temp segment by 128 in tablespace TEMP
+2026-04-10 01:13:44 SQL_ID=8u3k2v8h9m1ab
+2026-04-10 01:13:45 process 19876 suspended due to temp shortage
+2026-04-10 01:13:50 Batch job FAIL : daily_sales_summary</div>
+<div class="grid">
+<div class="card">
+<h4>이 로그가 말하는 것</h4>
+<ul>
+<li>장애 시점이 배치 시작 직후다</li>
+<li>temp segment 확장 실패이므로 정렬/해시 작업이 크다</li>
+<li>특정 SQL_ID가 찍혀 있으므로 원인 SQL 추적 가능</li>
+</ul>
+</div>
+<div class="card">
+<h4>DBA의 즉시 행동</h4>
+<ol>
+<li>TEMP 사용량 확인</li>
+<li>해당 세션과 SQL_ID 추적</li>
+<li>응급으로 tempfile 추가</li>
+<li>실행계획 확인 후 정렬 폭발 원인 분석</li>
+</ol>
+</div>
+</div>
+<div class="sql">-- Temp 파일 확인
+SELECT file_name, tablespace_name, bytes/1024/1024 mb
+FROM dba_temp_files;
+
+-- 사용자별 temp 설정 확인
+SELECT username, temporary_tablespace
+FROM dba_users;
+
+-- 응급조치
+ALTER TABLESPACE temp ADD TEMPFILE '경로' SIZE 5G;</div>
+<div class="warn"><strong>분석 포인트:</strong> 이 경우 TEMP가 부족해서 죽은 것처럼 보이지만, 실제 원인은 대개 과도한 sort/hash를 만드는 SQL이다. TEMP 증설은 서비스 복구용이고, 근본 해결은 SQL 튜닝이다.</div>
+<div class="divider"></div>
+<h3>시나리오 B · 사용자 Tablespace 부족으로 INSERT 실패</h3>
+<div class="log">[애플리케이션 로그 예시]
+2026-04-10 09:20:11 ERROR order insert failed
+ORA-01653: unable to extend table APP.ORDER_HIST by 8192 in tablespace TS_APP_DATA
+
+[alert log 예시]
+2026-04-10 09:20:11 Errors in file ...
+ORA-01653: unable to extend table APP.ORDER_HIST by 8192 in tablespace TS_APP_DATA</div>
+<div class="grid">
+<div class="card">
+<h4>해석</h4>
+<ul>
+<li>업무 데이터가 저장되는 TS_APP_DATA가 꽉 찼다</li>
+<li>ORDER_HIST가 급격히 증가했을 가능성이 높다</li>
+<li>배치 적재, 히스토리 누적, 인덱스 증가를 함께 봐야 한다</li>
+</ul>
+</div>
+<div class="card">
+<h4>즉시 조치</h4>
+<div class="sql">ALTER TABLESPACE ts_app_data
+ADD DATAFILE '경로' SIZE 10G;</div>
+</div>
+</div>
+<div class="sql">-- 총량 / 여유공간 / 사용량 확인
+SELECT tablespace_name, file_name, bytes/1024/1024 mb
+FROM dba_data_files
+WHERE tablespace_name = 'TS_APP_DATA';
+
+SELECT tablespace_name, bytes/1024/1024 free_mb
+FROM dba_free_space
+WHERE tablespace_name = 'TS_APP_DATA';
+
+-- 어떤 segment가 많이 쓰는지 확인
+SELECT segment_name, segment_type, bytes/1024/1024 mb
+FROM dba_segments
+WHERE tablespace_name = 'TS_APP_DATA'
+ORDER BY bytes DESC;</div>
+<div class="point"><strong>분석 포인트:</strong> 이 경우 “디스크를 늘리면 끝”이 아니다. 정말 자연 증가인지, 특정 테이블이 비정상적으로 커진 건지 구분해야 한다.</div>
+<div class="divider"></div>
+<h3>시나리오 C · Snapshot Too Old</h3>
+<div class="log">[배치 로그 예시]
+2026-04-10 14:02:00 report job START
+2026-04-10 15:17:48 ORA-01555: snapshot too old: rollback segment number with name "_SYSSMU12$" too small
+2026-04-10 15:17:48 report job FAIL</div>
+<div class="grid">
+<div class="card">
+<h4>해석</h4>
+<ul>
+<li>긴 SELECT가 도는 동안 필요한 과거 버전을 undo에서 유지하지 못했다</li>
+<li>동시에 많은 update/delete가 있었을 가능성이 높다</li>
+<li>undo_retention과 undo 공간이 부족했을 수 있다</li>
+</ul>
+</div>
+<div class="card">
+<h4>즉시 조치</h4>
+<div class="sql">ALTER TABLESPACE undotbs1 ADD DATAFILE '경로' SIZE 5G;
+ALTER SYSTEM SET undo_retention = 7200;</div>
+</div>
+</div>
+<div class="warn"><strong>분석 포인트:</strong> ORA-01555는 단순 조회 에러처럼 보여도, 실제로는 조회 시간과 DML 부하가 부딪힌 결과다. 긴 보고서 배치와 대량 갱신 배치가 같은 시간대에 있는지 확인해야 한다.</div>
+<div class="divider"></div>
+<h3>시나리오 D · SYSAUX 증가로 디스크 압박</h3>
+<div class="log">[운영 점검 메모 예시]
+2026-04-10 07:00 SYSAUX usage 82%
+2026-04-11 07:00 SYSAUX usage 87%
+2026-04-12 07:00 SYSAUX usage 91%
+2026-04-12 07:05 warning: filesystem /oradata 95% used</div>
+<div class="grid">
+<div class="card">
+<h4>해석</h4>
+<ul>
+<li>하루치 업무 데이터 급증보다는 진단 데이터 누적을 의심</li>
+<li>AWR/ASH 보존 기간이 과도할 수 있다</li>
+<li>성능 분석을 위해 저장한 데이터가 역으로 디스크 압박을 만든 경우다</li>
+</ul>
+</div>
+<div class="card">
+<h4>DBA 시선</h4>
+<ul>
+<li>무작정 파일만 늘리지 말 것</li>
+<li>어떤 component가 커졌는지 먼저 볼 것</li>
+<li>보존 정책과 수집 주기를 함께 점검할 것</li>
+</ul>
+</div>
+</div>
+<div class="divider"></div>
+<h3>시나리오 E · 접속 위치 착각으로 잘못된 작업 위험</h3>
+<div class="log">[운영자 콘솔 예시]
+SQL&gt; show con_name
+CON_NAME
+------------------------------
+ORCLPDB
+
+SQL&gt; select username, temporary_tablespace from dba_users where username='SCOTT';
+...
+
+운영자 메모:
+"나는 CDB에 있다고 생각했는데 실제로는 PDB에 들어와 있었음"</div>
+<p>이건 공간 부족 에러는 아니지만, Tablespace 변경/증설/삭제 작업을 할 때 매우 위험한 실수다. CDB와 PDB를 혼동하면 엉뚱한 컨테이너에서 작업하게 된다.</p>
+<div class="warn"><strong>실무 원칙:</strong> 파일/테이블스페이스 작업 전에 <code>ORACLE_HOME</code>, <code>ORACLE_SID</code>, 현재 container, 권한을 먼저 확인한다.</div>
+</section>
+<section class="section">
+<div class="badge">8단계 · 점검 루틴</div>
+<h2>DBA가 평소에 확인하면 좋은 항목</h2>
+<div class="grid">
+<div class="card">
+<h3>용량</h3>
+<ul>
+<li><code>dba_data_files</code> : 총 용량</li>
+<li><code>dba_free_space</code> : 여유 공간</li>
+<li><code>dba_segments</code> : 누가 많이 쓰는지</li>
+<li><code>dba_temp_files</code> : temp 파일 크기</li>
+</ul>
+</div>
+<div class="card">
+<h3>구조</h3>
+<ul>
+<li>현재 CDB / PDB 위치</li>
+<li>default / temporary tablespace 설정</li>
+<li>temp group 존재 여부</li>
+<li>datafile 경로와 실제 OS 경로 일치 여부</li>
+</ul>
+</div>
+<div class="card">
+<h3>로그</h3>
+<ul>
+<li>alert log 확인</li>
+<li>공간 관련 ORA 에러 확인</li>
+<li>배치 시작/실패 시점과의 상관관계 확인</li>
+<li>반복적으로 커지는 TS 추세 기록</li>
+</ul>
+</div>
+<div class="card">
+<h3>정책</h3>
+<ul>
+<li>autoextend 사용 여부와 maxsize</li>
+<li>undo_retention과 undo 용량</li>
+<li>배치용 계정의 temp 분리 여부</li>
+<li>AWR/ASH 보존 정책</li>
+</ul>
+</div>
+</div>
+<div class="sql">-- 사용자별 temporary tablespace
+SELECT username, temporary_tablespace
+FROM dba_users;
+
+-- Temporary tablespace 목록
+SELECT tablespace_name, contents
+FROM dba_tablespaces
+WHERE contents = 'TEMPORARY';
+
+-- Temporary tablespace group
+SELECT group_name, tablespace_name
+FROM dba_tablespace_groups;
+
+-- Tablespace 총량
+SELECT tablespace_name, file_name, bytes
+FROM dba_data_files;
+
+-- Tablespace 여유 공간
+SELECT tablespace_name, bytes
+FROM dba_free_space;</div>
+</section>
+<section class="section">
+<div class="badge">9단계 · 최종 정리</div>
+<h2>이번 범위를 한 문장으로 묶으면</h2>
+<div class="summary">96~111페이지의 핵심은
+“Data File은 물리 파일이고, Tablespace는 그 위를 관리하는 논리 단위이며,
+SYSTEM / SYSAUX / UNDO / TEMP / 사용자 Tablespace는 각각 목적이 다르다”는 점이다.
+
+여기에 교재는 Temporary Tablespace를 단순 소개에서 끝내지 않고,
+사용자별 할당 → 새 Temp 생성 → Temp Group 구성 → 사용자에게 Group 할당 → 원복 → 해제까지
+한 사이클로 실습하게 만든다.
+
+실무에서는 여기서 더 나아가,
+Data TS는 업무 데이터 증가,
+TEMP는 sort/hash 폭발,
+UNDO는 긴 조회와 DML 충돌,
+SYSAUX는 진단 데이터 누적,
+SYSTEM은 DB 메타정보 계층 문제로 연결된다는 걸 알아야 한다.
+
+즉 Tablespace 장애는 “공간이 모자라다”에서 끝나지 않고,
+SQL, 배치, 트랜잭션, 보존 정책, 운영 습관까지 되짚어보게 만드는 신호다.</div>
+<div class="good"><strong>마지막 포인트:</strong> 이 정리본은 처음 페이지 리뷰, 보완 질의에서 드러난 누락 포인트, 문제 사례와 대응, 실제 장애 로그 해석 흐름까지 하나로 합친 버전이다. 다음 범위를 이어갈 때도 같은 방식으로 확장 가능하다.</div>
+</section>
+</div>
+</body>
+</html>
