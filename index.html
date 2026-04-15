@@ -1,229 +1,230 @@
 <!-- oracle_dba_index.html -->
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Oracle DBA 학습 인덱스</title>
-    <style>
-      :root {
-        --bg: #f7f8fb;
-        --card: #ffffff;
-        --text: #1f2937;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --accent: #1d4ed8;
-      }
 
-      * {
-        box-sizing: border-box;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA 학습 인덱스</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #1d4ed8;
+    }
 
-      body {
-        margin: 0;
-        padding: 40px 20px 80px;
-        background: var(--bg);
-        color: var(--text);
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR",
-          Arial, sans-serif;
-        line-height: 1.7;
-      }
+    * {
+      box-sizing: border-box;
+    }
 
-      .wrap {
-        max-width: 980px;
-        margin: 0 auto;
-      }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR",
+        Arial, sans-serif;
+      line-height: 1.7;
+    }
 
-      .hero {
-        background: linear-gradient(135deg, #0f172a, #1e3a8a);
-        color: white;
-        border-radius: 24px;
-        padding: 36px;
-        margin-bottom: 24px;
-        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
-      }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
 
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: white;
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .item {
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .item:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .item:last-child {
+      padding-bottom: 0;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 760px) {
       .hero h1 {
-        margin: 0 0 10px;
-        font-size: 34px;
-        line-height: 1.3;
+        font-size: 28px;
       }
+    }
+  </style>
+</head>
 
-      .hero p {
-        margin: 0;
-        color: rgba(255, 255, 255, 0.86);
-      }
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Oracle DBA 학습 인덱스</h1>
+      <p>PDF 범위를 순차적으로 학습하며 정리한 HTML 노트 목록</p>
+    </header>
 
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        padding: 24px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-      }
-
-      .item {
-        padding: 18px 0;
-        border-top: 1px solid var(--line);
-      }
-
-      .item:first-child {
-        border-top: none;
-        padding-top: 0;
-      }
-
-      .item:last-child {
-        padding-bottom: 0;
-      }
-
-      a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 800;
-      }
-
-      .small {
-        color: var(--muted);
-        font-size: 14px;
-        margin-top: 6px;
-      }
-
-      @media (max-width: 760px) {
-        .hero h1 {
-          font-size: 28px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="wrap">
-      <header class="hero">
-        <h1>Oracle DBA 학습 인덱스</h1>
-        <p>PDF 범위를 순차적으로 학습하며 정리한 HTML 노트 목록</p>
-      </header>
-
-      <section class="card">
-        <div class="item">
+    <section class="card">
+      <div class="item">
           <a href="oracle_dba_notes_001.html"
             >001. 9~12페이지 · Oracle 아키텍처 / WAL / 프로세스 모델 / Too Many
             Connections / DB Pooling</a
           >
-          <div class="small">
-            Database vs Instance, SGA, Data Buffer Cache, Redo Log Buffer,
-            Dedicated Server, Shared Server, Connection Pooling
-          </div>
+        <div class="small">
+          Database vs Instance, SGA, Data Buffer Cache, Redo Log Buffer,
+          Dedicated Server, Shared Server, Connection Pooling
         </div>
+      </div>
 
-        <div class="item">
+      <div class="item">
           <a href="oracle_dba_notes_002.html"
             >002. 13~18페이지 · SGA/PGA / Buffer Cache / Redo / Recovery /
-            Shared Pool / Sort·Hash / OLTP vs Batch / Hard Parsing / Bind
+          Shared Pool / Sort·Hash / OLTP vs Batch / Hard Parsing / Bind
             Variable / PGA 위험성</a
           >
-          <div class="small">
-            SGA와 PGA의 역할 분리, Buffer Cache의 상태와 LRU, Redo와 Checkpoint,
-            Dictionary Cache / Library Cache, Sort·Hash 작업 위치, 배치·병렬 시
-            PGA 폭증 위험
-          </div>
+        <div class="small">
+          SGA와 PGA의 역할 분리, Buffer Cache의 상태와 LRU, Redo와 Checkpoint,
+          Dictionary Cache / Library Cache, Sort·Hash 작업 위치, 배치·병렬 시
+          PGA 폭증 위험
         </div>
+      </div>
 
-        <div class="item">
+      <div class="item">
           <a href="oracle_dba_notes_003.html"
             >003. 19~25페이지 · 프로세스 협업 / PMON / SMON / DBWR / LGWR / CKPT
-            / checkpoint / file header / commit 병목 / 지속가능한 최적화 /
+          / checkpoint / file header / commit 병목 / 지속가능한 최적화 /
             정합성</a
           >
-          <div class="small">
-            Server Process와 Background Process 협업, instance recovery,
-            checkpoint의 의미, control file / data file header, DBWR·LGWR 병목
-            해석, redo / commit / recovery 관점의 운영 전략
-          </div>
+        <div class="small">
+          Server Process와 Background Process 협업, instance recovery,
+          checkpoint의 의미, control file / data file header, DBWR·LGWR 병목
+          해석, redo / commit / recovery 관점의 운영 전략
         </div>
-        <!-- index에 추가할 div만 -->
-        <div class="item">
+      </div>
+      <!-- index에 추가할 div만 -->
+      <div class="item">
           <a href="oracle_dba_notes_004.html"
             >004. 26~33페이지 · Startup / Shutdown / NOMOUNT·MOUNT·OPEN / 운영
             모드 / 장애 진단</a
           >
-          <div class="small">
-            Oracle 기동 흐름(NOMOUNT→MOUNT→OPEN)과 parameter file → control file
-            → datafile 구조 연결, read only / restrict 같은 운영 제어 모드,
-            shutdown 옵션(normal·transactional·immediate·abort) 차이, 그리고
-            startup 실패 시 단계별 원인 분리(NOMOUNT=파라미터, MOUNT=control
-            file, OPEN=datafile/recovery)까지 실무 기준으로 정리
-          </div>
+        <div class="small">
+          Oracle 기동 흐름(NOMOUNT→MOUNT→OPEN)과 parameter file → control file
+          → datafile 구조 연결, read only / restrict 같은 운영 제어 모드,
+          shutdown 옵션(normal·transactional·immediate·abort) 차이, 그리고
+          startup 실패 시 단계별 원인 분리(NOMOUNT=파라미터, MOUNT=control
+          file, OPEN=datafile/recovery)까지 실무 기준으로 정리
         </div>
-        <div class="item">
+      </div>
+      <div class="item">
           <a href="oracle_dba_notes_005.html"
             >005. 37~48페이지 · 파라미터 파일 / v$parameter / PFILE·SPFILE /
             환경변수 / 저장구조·Undo 연결</a
           >
-          <div class="small">
-            Server Process와 Background Process 협업, instance recovery,
-            checkpoint의 의미, control file / data file header, DBWR·LGWR 병목
-            해석, redo / commit / recovery 관점의 운영 전략
-          </div>
+        <div class="small">
+          Server Process와 Background Process 협업, instance recovery,
+          checkpoint의 의미, control file / data file header, DBWR·LGWR 병목
+          해석, redo / commit / recovery 관점의 운영 전략
         </div>
-        <div class="item">
+      </div>
+      <div class="item">
           <a href="undo_deep_dive.html"
             >Undo Deep Dive · SCN / Undo Chain / Consistent Read / ORA-01555</a
           >
-          <div class="small">
-            Undo의 존재 이유, redo와의 차이, Query SCN과 Block SCN 비교, before
-            image와 pointer, undo chain, snapshot too old의 정확한 의미까지 깊게
-            정리
-          </div>
+        <div class="small">
+          Undo의 존재 이유, redo와의 차이, Query SCN과 Block SCN 비교, before
+          image와 pointer, undo chain, snapshot too old의 정확한 의미까지 깊게
+          정리
         </div>
+      </div>
 
-        <div class="item">
+      <div class="item">
           <a href="oracle_dba_notes_006.html"
             >006. 50~53페이지 · Trace File / Dictionary / V$DIAG_INFO / TKPROF /
             SQL Trace / 10046 Trace</a
           >
-          <div class="small">
-            Trace file 위치 확인, alert log와 user trace 구분, v$parameter와
-            v$diag_info 조회, tkprof 변환, sql_trace와 10046 trace 차이, logical
-            read·physical read·current read 해석
-          </div>
+        <div class="small">
+          Trace file 위치 확인, alert log와 user trace 구분, v$parameter와
+          v$diag_info 조회, tkprof 변환, sql_trace와 10046 trace 차이, logical
+          read·physical read·current read 해석
         </div>
+      </div>
 
-        <div class="item">
+      <div class="item">
           <a href="oracle_dba_notes_006.html"
             >006. 54~60페이지 · 연습문제 / AUTOTRACE / DBMS_XPLAN.DISPLAY /
             DISPLAY_CURSOR / 10046 TRACE</a
           >
-          <div class="small">
-            각 연습문제를 통해 실행계획 확인 도구들의 차이, 예상 계획과 실제
-            실행 정보 구분, trace 기반 증거 수집 흐름, DBA 관점의 SQL 분석
-            목표와 학습 포인트 정리
-          </div>
+        <div class="small">
+          각 연습문제를 통해 실행계획 확인 도구들의 차이, 예상 계획과 실제
+          실행 정보 구분, trace 기반 증거 수집 흐름, DBA 관점의 SQL 분석
+          목표와 학습 포인트 정리
         </div>
-        <div class="item">
+      </div>
+      <div class="item">
           <a href="oracle_dba_notes_007.html"
             >007. 61~69페이지 · Control File / Mount / control_files / 미러링 /
             경로변경 절차</a
           >
-          <div class="small">
-            Mount 단계에서 Control File을 읽는 이유, DB 구조 메타정보(Database
-            Name·Datafile·Checkpoint), control_files 파라미터 의미, 다중 미러링
-            구조, spfile 반영 vs running system 차이, Control File 추가 시
-            파라미터 수정 + 실제 파일 복사 + 재기동 절차
-          </div>
+        <div class="small">
+          Mount 단계에서 Control File을 읽는 이유, DB 구조 메타정보(Database
+          Name·Datafile·Checkpoint), control_files 파라미터 의미, 다중 미러링
+          구조, spfile 반영 vs running system 차이, Control File 추가 시
+          파라미터 수정 + 실제 파일 복사 + 재기동 절차
         </div>
-        <div class="item">
+      </div>
+      <div class="item">
           <a href="oracle_dba_notes_008.html"
             >008. 70~85페이지 · Redo Log / Group·Member / Log Switch /
             Checkpoint / Tablespace</a
           >
-          <div class="small">
-            Redo Log 구조와 Write Ahead Logging, commit과 checkpoint 관계,
-            current·active·inactive 상태 해석, log switch와 checkpoint 병목
-            구조, v$log / v$logfile 조회, dictionary vs dynamic view 차이,
-            tablespace 총량·여유공간·사용량 계산 및 autoextend·datafile 관리
-            흐름 정리
-          </div>
+        <div class="small">
+          Redo Log 구조와 Write Ahead Logging, commit과 checkpoint 관계,
+          current·active·inactive 상태 해석, log switch와 checkpoint 병목
+          구조, v$log / v$logfile 조회, dictionary vs dynamic view 차이,
+          tablespace 총량·여유공간·사용량 계산 및 autoextend·datafile 관리
+          흐름 정리
+        </div>
         </div>
 <div class="item">
   <a href="oracle_dba_notes_009.html">009. 86~95페이지 · Control File / Redo Log 실습 / Group·Member / Log Switch</a>
@@ -262,3 +263,41 @@
     </div>
   </body>
 </html>
+=======
+      </div>
+      <div class="item">
+        <a href="oracle_dba_notes_009.html">009. 96~111페이지 · Data File / Tablespace / SYSTEM·SYSAUX·TEMP /
+          Dictionary View / Temp Group / Tablespace 장애 시나리오</a>
+        <div class="small">
+          Data File과 Tablespace의 논리·물리 구조 관계, SYSTEM·SYSAUX·TEMP의 역할,
+          Dictionary View와 Dynamic Performance View 차이, 사용자별 Temporary
+          Tablespace 및 Temp Group 운영 흐름, 그리고 ORA-01652·ORA-01653·ORA-01555
+          같은 실제 Tablespace 장애 사례와 대응 절차까지 실무 관점으로 확장 정리
+        </div>
+      </div>
+      <div class="item">
+        <a href="oracle_dba_pressure_cases.html">실무 병목 분석 · logical read / physical read / redo / parse /
+          실행계획</a>
+        <div class="small">
+          v$sysstat 증가량 기반 병목 판단, logical read·physical read·redo
+          size·parse count 해석, CPU·디스크·LGWR·checkpoint 압박 유형별 실제
+          사례, 실행계획 분석 흐름, 과도한 조인·인덱스·통계 문제 해결 전략,
+          tablespace·temp·undo 용량 이슈 대응 정리
+        </div>
+      </div>
+      <div class="item">
+        <a href="oracle_dba_ops_routine_and_critical_issues.html">OPS. 운영 루틴 / 치명적 이슈 / 병목 / 예방 전략 / DBA 실무 철학</a>
+        <div class="small">
+          DBA의 핵심 운영 철학(정합성·복구 중심)과 함께, 아침 점검 루틴(alert
+          log·archive·backup·wait), archive full·control file 손상·recovery
+          실패 같은 치명적 장애, commit 병목·동시성 경합·PGA 폭발 등 주요 성능
+          이슈, 그리고 복제·자동화·모니터링 기반의 실무 예방 전략까지 전체
+          운영 흐름을 한 페이지로 정리
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+
+</html>
+>>>>>>> a6826996c28e4b3967ffda70ed5c016334d9a37e
