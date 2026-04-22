@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle DBA Notes · 235-240페이지</title>
+  <style>
+    :root{
+      --bg:#f6f3ee;
+      --paper:#fffdf9;
+      --ink:#1f1f1f;
+      --muted:#6f6a63;
+      --line:#e7e0d6;
+      --accent:#8b6f47;
+      --accent-soft:#f3ece1;
+      --code-bg:#f8f5f0;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top left, #fbf8f3 0%, #f6f3ee 45%, #f1ede6 100%);
+      line-height:1.75;
+    }
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    .hero{
+      background: linear-gradient(135deg, #faf6ef 0%, #fffdfa 100%);
+      border:1px solid var(--line);
+      border-radius: 28px;
+      padding: 36px 34px;
+      box-shadow: 0 16px 40px rgba(60,40,10,.06);
+      margin-bottom: 28px;
+    }
+    .eyebrow{
+      display:inline-block;
+      font-size:13px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--accent);
+      background:var(--accent-soft);
+      border-radius:999px;
+      padding:6px 10px;
+      margin-bottom:14px;
+      font-weight:700;
+    }
+    h1{
+      margin:0 0 10px;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height:1.2;
+      letter-spacing:-0.02em;
+    }
+    .subtitle{
+      margin:0;
+      color:var(--muted);
+      font-size:16px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:28px;
+      box-shadow: 0 10px 24px rgba(40,24,0,.04);
+    }
+    h2{
+      margin:0 0 14px;
+      font-size:26px;
+      letter-spacing:-0.02em;
+    }
+    h3{
+      margin:28px 0 10px;
+      font-size:20px;
+      letter-spacing:-0.01em;
+    }
+    p{margin:10px 0}
+    ul{
+      margin:10px 0 0 0;
+      padding-left:20px;
+    }
+    li{margin:6px 0}
+    .quote{
+      margin:16px 0;
+      padding:16px 18px;
+      border-left:4px solid var(--accent);
+      background:var(--accent-soft);
+      border-radius:14px;
+      color:#4b4031;
+    }
+    .code{
+      background:var(--code-bg);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px 18px;
+      overflow:auto;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      font-size:14px;
+      line-height:1.65;
+      white-space:pre-wrap;
+      margin:14px 0;
+    }
+    .mini{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-top:16px;
+    }
+    .mini .box{
+      background:#fcfaf6;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px 18px;
+    }
+    .box strong{
+      display:block;
+      margin-bottom:6px;
+      color:#3d3122;
+    }
+    .summary{
+      background: linear-gradient(180deg, #fffdfa 0%, #faf6ef 100%);
+    }
+    .footer{
+      margin-top:20px;
+      color:var(--muted);
+      font-size:14px;
+      text-align:center;
+    }
+    .tag{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background:#f5efe7;
+      color:#6c5738;
+      margin-right:8px;
+      margin-bottom:8px;
+      border:1px solid #eadfce;
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Oracle DBA Notes</div>
+      <h1>235~240페이지 정리</h1>
+      <p class="subtitle">
+        6장 오브젝트 관리 중 <strong>테이블 생성의 의미</strong>를 DBA 관점으로 다시 풀어쓴 요약본.
+        단순 문법이 아니라 저장 구조, 제약조건, Tablespace, LOB 설계까지 연결해서 이해하도록 구성했다.
+      </p>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>이 구간의 핵심</h2>
+        <p>
+          이 범위는 “테이블을 어떻게 만든다”보다,
+          <strong>테이블을 어떤 운영 관점으로 설계해야 하는가</strong>에 더 가깝다.
+          컬럼을 나열하는 수준이 아니라, 앞으로 데이터가 커졌을 때
+          성능·정합성·복구·저장 위치까지 어떻게 관리할지를 함께 봐야 한다.
+        </p>
+        <div class="quote">
+          테이블 생성은 단순한 DDL 한 줄이 아니라,
+          <strong>미래 운영 방식을 선제적으로 결정하는 작업</strong>이다.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>1. 테이블 생성의 본질</h2>
+        <p>개발자 시선에서는 “테이블 하나 만든다”로 끝날 수 있지만, DBA는 먼저 아래를 본다.</p>
+        <div class="mini">
+          <div class="box">
+            <strong>데이터 규모</strong>
+            이 테이블이 앞으로 얼마나 커질지, 급격히 증가할지 본다.
+          </div>
+          <div class="box">
+            <strong>저장 위치</strong>
+            어떤 Tablespace에 둘지, 다른 오브젝트와 분리할지 판단한다.
+          </div>
+          <div class="box">
+            <strong>정합성</strong>
+            NULL 허용 여부, 기본값, 허용 값 범위를 DB 차원에서 강제한다.
+          </div>
+          <div class="box">
+            <strong>성능과 복구</strong>
+            인덱스 전략, LOB 분리, redo/backup 부담까지 염두에 둔다.
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2. 기본 생성 예시</h2>
+        <div class="code">create table edu01.t_cust
+(
+  cust_no   varchar2(6) not null,
+  cust_nm   varchar2(50) not null,
+  addr      varchar2(200) not null,
+  tel_no    varchar2(15) not null,
+  join_dt   varchar2(8) default to_char(sysdate, 'yyyymmdd'),
+  class_cd  varchar2(4) check (class_cd in ('CLSS', 'GOLD', 'VIP', 'VVIP')),
+  sal       number default 0
+)
+tablespace users;</div>
+        <p>
+          여기서 중요한 건 문법보다도,
+          <strong>각 컬럼과 옵션이 어떤 운영 의미를 가지는가</strong>를 읽는 것이다.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>3. 컬럼 정의에서 DBA가 보는 포인트</h2>
+
+        <h3>NOT NULL</h3>
+        <p>
+          필수 데이터가 빠지지 않도록 막는 가장 기본적인 제약이다.
+          특히 PK 후보 컬럼이나 식별자 성격의 컬럼은 거의 항상 NOT NULL로 간다.
+        </p>
+
+        <h3>DEFAULT</h3>
+        <p>
+          애플리케이션이 값을 누락해도 DB가 기본값을 채워 넣는다.
+          이는 단순 편의 기능이 아니라 <strong>DB가 마지막 안전장치</strong> 역할을 한다는 뜻이다.
+        </p>
+
+        <h3>CHECK</h3>
+        <p>
+          허용 가능한 값의 집합을 DB 차원에서 제한한다.
+          애플리케이션 검증만 믿지 않고, 데이터베이스가 직접 이상치를 차단한다.
+        </p>
+
+        <h3>TABLESPACE</h3>
+        <p>
+          이 테이블이 실제로 저장될 물리적 위치를 결정한다.
+          실무에서는 DATA, INDEX, LOB, TEMP, UNDO를 어떻게 분리할지가 성능과 운영성에 큰 영향을 준다.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>4. Primary Key를 별도로 붙이는 이유</h2>
+        <p>
+          실무에서는 테이블을 먼저 만들고, 이후에
+          <span class="tag">ALTER TABLE</span>
+          <span class="tag">ADD CONSTRAINT</span>
+          방식으로 PK를 붙이는 경우가 많다.
+        </p>
+        <div class="quote">
+          <strong>PK는 논리 제약</strong>이고,
+          <strong>Index는 물리 성능 전략</strong>이다.
+          그래서 둘을 분리해서 관리하는 사고가 중요하다.
+        </div>
+        <p>
+          이렇게 해야 인덱스를 별도 Tablespace에 두거나,
+          local/global 전략을 다르게 가져가는 등 운영 유연성이 생긴다.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>5. LOB 타입은 왜 특별한가</h2>
+        <div class="code">lob_col1 clob
+lob_col2 clob</div>
+        <p>
+          CLOB/BLOB 같은 LOB 데이터는 일반 문자열 컬럼과 같은 감각으로 다루면 안 된다.
+          크기가 크고, I/O 패턴도 다르고, 조각화 문제도 더 쉽게 생긴다.
+        </p>
+
+        <h3>핵심 원칙</h3>
+        <p>
+          원천 테이블, LOB Segment, LOB Index를 가능하면 분리해서 두는 것이 유리하다.
+          그래야 일반 행 데이터와 큰 오브젝트 데이터가 서로 성능을 끌어내리지 않는다.
+        </p>
+
+        <div class="code">lob(lob_col1)
+store as
+(
+  tablespace ts_test
+  index ix_cust_lob_col1 (tablespace users_x)
+)</div>
+      </section>
+
+      <section class="card summary">
+        <h2>6. 실무식으로 다시 정리하면</h2>
+        <ul>
+          <li>테이블 생성은 컬럼 선언이 아니라 저장 구조 설계다.</li>
+          <li>NOT NULL, DEFAULT, CHECK는 데이터 정합성을 DB가 직접 지키는 장치다.</li>
+          <li>TABLESPACE 지정은 성능과 운영의 출발점이다.</li>
+          <li>PK와 Index는 같은 듯 보여도 논리/물리 관점이 다르다.</li>
+          <li>LOB는 일반 컬럼처럼 두지 말고 분리 설계를 기본으로 생각해야 한다.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>한 줄 결론</h2>
+        <div class="quote">
+          <strong>테이블 생성은 “컬럼을 만든다”가 아니라 “운영 가능한 저장 구조를 설계한다”</strong>로 이해해야 한다.
+        </div>
+      </section>
+    </div>
+
+    <div class="footer">
+      Oracle DBA 교재 요청 범위(235~240페이지)용 요약 HTML
+    </div>
+  </div>
+</body>
+</html>
