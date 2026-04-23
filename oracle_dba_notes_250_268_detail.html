@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>oracle_dba_notes_250_268_detail</title>
+<style>
+:root{
+  --bg:#f7f4ef;
+  --card:#fffdf9;
+  --text:#222;
+  --muted:#6d665d;
+  --line:#e8e0d4;
+  --accent:#8b6f47;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+  line-height:1.75;
+}
+.wrap{
+  max-width:1000px;
+  margin:0 auto;
+  padding:40px 24px 80px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:32px;
+  margin-bottom:20px;
+}
+.back{
+  display:inline-block;
+  margin-bottom:18px;
+  text-decoration:none;
+  color:#3c3226;
+  font-weight:600;
+}
+.badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  background:#f4ede3;
+  color:var(--accent);
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:14px;
+}
+h1{margin:0 0 10px;font-size:38px}
+h2{margin:0 0 14px;font-size:26px}
+h3{margin:22px 0 8px;font-size:20px}
+p{margin:10px 0}
+ul{padding-left:20px}
+li{margin:6px 0}
+.code{
+  background:#faf7f2;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 16px;
+  font-family:ui-monospace,Menlo,monospace;
+  white-space:pre-wrap;
+  font-size:14px;
+}
+.quote{
+  background:#f8f2e9;
+  border-left:4px solid var(--accent);
+  padding:16px;
+  border-radius:12px;
+  margin:14px 0;
+}
+.footer{
+  text-align:center;
+  font-size:14px;
+  color:var(--muted);
+  margin-top:20px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="back" href="index.html">← 메인 메뉴로 돌아가기</a>
+
+<section class="card">
+  <div class="badge">Oracle DBA Notes</div>
+  <h1>250~268페이지 정리</h1>
+  <p>
+    테이블을 생성한 이후 실제 운영 단계에서 수행하는 변경 작업을 다루는 구간이다.
+    컬럼 추가, Tablespace 이동, VARCHAR2 확장, Comment 관리, Synonym 설정처럼
+    실무에서 반복적으로 발생하는 운영 작업이 핵심이다.
+  </p>
+</section>
+
+<section class="card">
+  <h2>1. 운영의 핵심은 생성이 아니라 변경 관리</h2>
+  <p>
+    초급자는 create table이 끝이라고 생각하지만,
+    실제 DBA는 그 이후를 더 중요하게 본다.
+  </p>
+  <ul>
+    <li>컬럼 추가 요청</li>
+    <li>저장 공간 부족</li>
+    <li>Tablespace 정책 변경</li>
+    <li>문자열 길이 부족</li>
+    <li>다른 계정 접근 필요</li>
+  </ul>
+  <div class="quote">
+    운영 = 지속적인 구조 변경 관리
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. 컬럼 추가는 생각보다 무거운 작업</h2>
+
+  <div class="code">alter table edu01.t_cust
+add (
+  input_date varchar2(8),
+  updt_date varchar2(8)
+);</div>
+
+  <p>
+    문장은 단순하지만 대용량 테이블에서는 매우 조심해야 한다.
+    DDL Lock, Redo 증가, Undo 사용, 서비스 지연이 발생할 수 있다.
+  </p>
+
+  <p>
+    특히 업무 시간 중 수행하면 애플리케이션이 멈춘 것처럼 보일 수 있다.
+    그래서 DBA는 작업 시간과 영향 범위를 먼저 판단한다.
+  </p>
+
+  <div class="quote">
+    “추가 가능”과 “운영 중 안전하게 가능한가”는 완전히 다른 문제다.
+  </div>
+</section>
+
+<section class="card">
+  <h2>3. Tablespace 이동</h2>
+
+  <div class="code">alter table edu01.t_cust
+move tablespace users;</div>
+
+  <p>
+    이것은 단순 복사가 아니라 실제 저장 위치를 바꾸는 작업이다.
+    용량 부족, I/O 분산, 성능 개선, 스토리지 정책 변경 때문에 수행한다.
+  </p>
+
+  <h3>가장 중요한 문제</h3>
+  <p>
+    MOVE 이후 기존 인덱스가 unusable 상태가 될 수 있다.
+    그러면 옵티마이저는 인덱스를 쓰지 못하고 Full Table Scan으로 바뀐다.
+  </p>
+
+  <div class="code">alter index index_name rebuild;</div>
+
+  <p>
+    이 rebuild를 놓치면 갑자기 서비스가 느려지는 대표적인 장애가 발생한다.
+  </p>
+</section>
+
+<section class="card">
+  <h2>4. VARCHAR2 최대 크기 확장</h2>
+
+  <p>
+    기본적으로 Oracle은 VARCHAR2 길이에 제한이 있다.
+    긴 문자열, JSON, 대형 메모 데이터를 저장해야 하면 부족해진다.
+  </p>
+
+  <div class="code">alter system set max_string_size=extended scope=spfile;</div>
+
+  <p>
+    하지만 이건 단순 파라미터 수정이 아니다.
+    PDB를 upgrade mode로 열고, utl32k.sql을 실행한 뒤 재기동해야 한다.
+  </p>
+
+  <div class="quote">
+    이것은 Dictionary 구조 자체를 바꾸는 작업이다.
+    그래서 restart와 upgrade mode가 필요하다.
+  </div>
+</section>
+
+<section class="card">
+  <h2>5. Comment는 미래 DBA를 위한 문서</h2>
+
+  <div class="code">comment on table edu01.t_cust is '고객';
+comment on column edu01.t_cust.cust_no is '고객번호';</div>
+
+  <p>
+    시간이 지나면 아무도 컬럼의 원래 의미를 기억하지 못한다.
+    특히 퇴사자가 만든 구조는 해석 자체가 어려워진다.
+  </p>
+
+  <p>
+    그래서 Comment는 단순 설명이 아니라 운영을 위한 보험이다.
+    미래의 DBA가 구조를 이해할 수 있게 해주는 가장 현실적인 문서다.
+  </p>
+
+  <div class="code">select * from dba_tab_comments;
+select * from dba_col_comments;</div>
+
+  <div class="quote">
+    설계 문서보다 DB Dictionary가 더 정확하다.
+    DB가 현재 상태 그 자체이기 때문이다.
+  </div>
+</section>
+
+<section class="card">
+  <h2>6. Synonym</h2>
+
+  <p>
+    다른 스키마의 오브젝트를 사용할 때
+    매번 schema명을 붙이는 불편함을 줄이기 위해 사용한다.
+  </p>
+
+  <div class="code">select * from edu01.t_cust;</div>
+
+  <p>Synonym을 만들면 아래처럼 단순하게 사용할 수 있다.</p>
+
+  <div class="code">create public synonym t_cust
+for edu01.t_cust;
+
+select * from t_cust;</div>
+
+  <h3>Public vs Private</h3>
+  <p>
+    Public Synonym은 모든 계정에 적용되고,
+    Private Synonym은 특정 계정만 사용 가능하다.
+  </p>
+
+  <div class="quote">
+    Public Synonym은 편하지만 너무 많아지면
+    실제 owner 추적이 어려워져 장애 분석이 힘들어진다.
+  </div>
+</section>
+
+<section class="card">
+  <h2>한 줄 정리</h2>
+  <div class="quote">
+    create table은 시작일 뿐이다.
+    진짜 DBA 업무는 그 이후 변경을 안전하게 관리하는 것이다.
+  </div>
+</section>
+
+<div class="footer">
+  Oracle DBA 교재 250~268페이지 상세 정리
+</div>
+
+</div>
+</body>
+</html>
