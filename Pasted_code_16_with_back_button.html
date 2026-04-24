@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>321~349페이지 · Clustered Index / Constraint / Partition Table / Local & Global Index</title>
+  <style>
+    :root {
+      --bg:#f6f4ef; --paper:#fffdf8; --ink:#24211d; --muted:#6f675e;
+      --soft:#ebe5d8; --accent:#8b5e34; --accent2:#2f5f5f; --code:#1f2933;
+      --warn:#8a3d2f; --ok:#3f6b4f;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;line-height:1.72}
+    .wrap{max-width:1120px;margin:0 auto;padding:42px 22px 80px}
+    .hero{background:linear-gradient(135deg,#fffdf8,#eee6d8);border-radius:28px;padding:38px 42px;box-shadow:0 18px 50px rgba(60,45,28,.08)}
+    .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:800}
+    h1{margin:8px 0 14px;font-size:34px;line-height:1.25;letter-spacing:-.04em}
+    h2{margin:48px 0 18px;font-size:25px;letter-spacing:-.03em;border-left:8px solid var(--accent);padding-left:14px}
+    h3{margin:28px 0 10px;font-size:19px;color:#332a22}
+    p{margin:8px 0}.muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+    .card{background:rgba(255,255,255,.72);border-radius:18px;padding:18px;border:1px solid rgba(139,94,52,.12)}
+    .card b{display:block;margin-bottom:6px;color:var(--accent2)}
+    .section{background:var(--paper);border-radius:24px;padding:30px 34px;margin-top:24px;box-shadow:0 10px 30px rgba(60,45,28,.055)}
+    .page{display:inline-block;font-size:12px;font-weight:800;color:#fff;background:var(--accent2);border-radius:999px;padding:2px 10px;margin-right:6px;vertical-align:middle}
+    .note{background:#f3eee4;border-radius:18px;padding:16px 18px;margin:16px 0;color:#3c342b}
+    .warn{background:#fff3ef;color:var(--warn);border-left:6px solid var(--warn)}
+    .ok{background:#eff8f0;color:var(--ok);border-left:6px solid var(--ok)}
+    ul{padding-left:22px;margin:8px 0 14px}li{margin:4px 0}
+    table{width:100%;border-collapse:collapse;margin:14px 0 20px;background:white;border-radius:16px;overflow:hidden}
+    th,td{padding:12px 14px;border-bottom:1px solid var(--soft);vertical-align:top}th{background:#eee5d6;text-align:left;color:#463523}tr:last-child td{border-bottom:0}
+    pre{background:var(--code);color:#f7f4ed;border-radius:18px;padding:18px;overflow:auto;font-size:13px;line-height:1.55}code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+    .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}.flow div{background:#f7f1e6;border-radius:16px;padding:14px}.flow b{color:var(--accent)}
+    .toc{margin-top:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.toc a{display:block;text-decoration:none;color:#2d2924;background:#ffffff9c;border-radius:14px;padding:12px 14px}.toc a:hover{background:white}
+    .footer{margin-top:34px;color:var(--muted);font-size:13px;text-align:center}
+    @media(max-width:820px){.grid,.flow,.toc{grid-template-columns:1fr}.hero{padding:28px 24px}h1{font-size:28px}.section{padding:24px 20px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+
+<div style="margin: 8px 0 24px 0; padding-left: 8px;">
+  <a href="index.html" style="
+    color: #3b2f22;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  ">
+    ← 메인 메뉴로 돌아가기
+  </a>
+</div>
+
+    <section class="hero">
+      <div class="eyebrow">Oracle DB Admin 과정 · 321~349페이지</div>
+      <h1>Clustered Index / Constraint / Partition Table / Local & Global Index</h1>
+      <p class="muted">이 범위는 오브젝트 관리 중 후반부다. 핵심 흐름은 <b>클러스터 저장 구조 → PK/FK 제약조건 → 파티션 테이블 → 파티션 인덱스와 관리 작업</b>으로 이어진다.</p>
+      <div class="grid">
+        <div class="card"><b>321</b>Clustered Index 테이블</div>
+        <div class="card"><b>322~330</b>Primary Key / Foreign Key / Constraint 변경</div>
+        <div class="card"><b>331~337</b>Partition Table / Partition Pruning</div>
+        <div class="card"><b>338~349</b>Local·Global Index / Partition 관리</div>
+      </div>
+      <div class="toc">
+        <a href="#cluster">1. Clustered Index 테이블</a>
+        <a href="#constraint">2. Constraint: PK / FK</a>
+        <a href="#partition">3. Partition Table 핵심</a>
+        <a href="#index">4. Partition Index 전략</a>
+        <a href="#manage">5. Partition 관리 SQL</a>
+        <a href="#ops">6. 실무 DBA 관점 정리</a>
+      </div>
+    </section>
+
+    <section id="cluster" class="section">
+      <h2><span class="page">321p</span>7. Clustered Index 테이블</h2>
+      <p>Clustered Index 테이블은 <b>키 값이 같은 레코드가 같은 블록에 모이도록 저장</b>하는 구조다. 같은 부서코드, 같은 그룹 키처럼 함께 조회되는 데이터가 물리적으로 가까이 있으면 I/O를 줄일 수 있다.</p>
+      <ul>
+        <li>키 값이 같은 레코드를 한 블록에 모아 저장한다.</li>
+        <li>한 블록에 모두 담을 수 없으면 새 블록을 할당하고 <b>Cluster Chain</b>으로 연결한다.</li>
+        <li><b>다중 테이블 인덱스 클러스터</b>는 여러 테이블의 레코드를 같은 블록에 저장할 수 있다.</li>
+        <li>즉, 물리적으로 조인된 상태처럼 저장하는 구조다.</li>
+      </ul>
+      <div class="note">
+        <b>쉽게 말하면</b><br />
+        일반 테이블은 각 테이블의 행이 자기 블록에 따로 저장된다. Clustered Index는 “항상 같이 조회되는 데이터”를 한 공간에 몰아두는 방식이다. 조인 비용을 줄일 수 있지만, 데이터 분포가 나쁘거나 DML이 많으면 체인과 관리 비용이 커질 수 있다.
+      </div>
+    </section>
+
+    <section id="constraint" class="section">
+      <h2><span class="page">322~330p</span>8. Constraint: Primary Key / Foreign Key</h2>
+      <h3>Primary Key의 특성</h3>
+      <ul>
+        <li>PK는 <b>Not Null + Unique</b>를 동시에 보장한다.</li>
+        <li>PK 칼럼 수는 최소화하는 것이 좋다.</li>
+        <li>PK 생성 시 기본적으로 Constraint 이름과 동일한 인덱스가 생성된다.</li>
+        <li>이미 만들어진 인덱스를 PK에 사용할 수도 있다.</li>
+      </ul>
+
+      <h3>PK 생성 방식 3가지</h3>
+      <table>
+        <thead><tr><th>방식</th><th>의미</th><th>주의점</th></tr></thead>
+        <tbody>
+          <tr><td>테이블 생성 시 PK 지정</td><td>CREATE TABLE 문 안에서 constraint 지정</td><td>인덱스 테이블스페이스를 세밀하게 분리하기 어렵다.</td></tr>
+          <tr><td>테이블 생성 후 PK Add</td><td>ALTER TABLE ADD CONSTRAINT 사용</td><td>USING INDEX TABLESPACE로 인덱스 위치 지정 가능</td></tr>
+          <tr><td>기존 인덱스 지정</td><td>먼저 인덱스를 만들고 PK가 그 인덱스를 사용</td><td>인덱스 선두 칼럼이 PK 칼럼이면 추가 칼럼이 있어도 사용 가능</td></tr>
+        </tbody>
+      </table>
+
+      <pre><code>-- 테이블 생성 시 PK 지정
+create table edu01.t_cust
+( cust_no  varchar2(6)   not null,
+  cust_nm  varchar2(50)  not null,
+  addr     varchar2(200) not null,
+  tel_no   varchar2(15)  not null,
+  join_dt  varchar2(8)   default to_char(sysdate, 'yyyymmdd'),
+  class_cd varchar2(4)   check (class_cd in ('CLSS', 'GOLD', 'VIP', 'VVIP')),
+  sal      number        default 0,
+  constraint pk_cust primary key(cust_no)
+) tablespace users;
+
+-- 테이블 생성 후 PK 추가
+alter table edu01.t_cust
+add constraint pk_cust primary key(cust_no)
+using index tablespace users;
+
+-- 기존 인덱스를 PK에 사용
+create index edu01.ix_cust_pk
+on edu01.t_cust(cust_no, join_dt) tablespace users;
+
+alter table edu01.t_cust
+add constraint pk_cust primary key(cust_no)
+using index edu01.ix_cust_pk;</code></pre>
+
+      <h3>Constraint 이름 변경 / 삭제</h3>
+      <pre><code>alter table edu01.t_cust rename constraint pk_cust to cust_pk;
+alter table edu01.t_cust drop constraint cust_pk;</code></pre>
+
+      <h3>Foreign Key의 핵심</h3>
+      <p>Foreign Key는 자식 테이블의 값이 부모 테이블의 PK 또는 Unique Key에 존재하는지 보장한다. 예를 들어 주문 테이블의 <code>cust_no</code>는 고객 테이블의 <code>cust_no</code>를 참조할 수 있다.</p>
+      <ul>
+        <li>참조 대상은 부모 테이블의 <b>Primary Key 또는 Unique Index</b>여야 한다.</li>
+        <li>조인 연결 칼럼 중 한쪽은 Unique가 보장되어야 1:M 관계가 안정된다.</li>
+        <li>PK는 자동으로 인덱스가 생성되지만, <b>FK 칼럼은 별도 인덱스를 직접 생성해야 한다.</b></li>
+        <li>FK 칼럼에 NULL이 들어가면 FK 체크가 수행되지 않는다.</li>
+      </ul>
+
+      <div class="note warn">
+        <b>실무 주의</b><br />
+        FK에 인덱스가 없으면 부모 테이블 삭제/변경 시 자식 테이블을 넓게 검사하거나 Lock 문제가 커질 수 있다. 운영 DB에서는 FK 생성 후 해당 FK 칼럼 인덱스 존재 여부를 반드시 확인한다.
+      </div>
+
+      <pre><code>alter table edu01.t_order
+add constraint fk_order01 foreign key(cust_no)
+references edu01.t_cust(cust_no)
+[ on delete set null ]
+[ deferrable initially deferred ];</code></pre>
+
+      <table>
+        <thead><tr><th>옵션</th><th>동작</th><th>실무 판단</th></tr></thead>
+        <tbody>
+          <tr><td>Restrict 기본값</td><td>부모 데이터 삭제 시 자식 데이터가 있으면 삭제 불가</td><td>가장 안전하며 권장되는 방식</td></tr>
+          <tr><td>ON DELETE SET NULL</td><td>부모 삭제 시 자식 FK 칼럼을 NULL로 변경</td><td>자식 FK 칼럼이 Nullable이어야 함</td></tr>
+          <tr><td>ON DELETE CASCADE</td><td>부모 삭제 시 자식 행도 모두 삭제</td><td><b>매우 위험</b>. 대량 삭제 장애로 이어질 수 있음</td></tr>
+          <tr><td>DEFERRABLE INITIALLY IMMEDIATE</td><td>DML 수행 즉시 제약조건 점검</td><td>기본값</td></tr>
+          <tr><td>DEFERRABLE INITIALLY DEFERRED</td><td>COMMIT 시점에 제약조건 점검</td><td>부모/자식 데이터를 한 트랜잭션에서 동시에 넣을 때 유리</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Constraint 활성화 / 비활성화</h3>
+      <pre><code>alter table edu01.t_order
+disable constraint fk_order01;
+
+alter table edu01.t_order
+enable [NOVALIDATE] constraint fk_order01;</code></pre>
+      <div class="note">
+        <b>NOVALIDATE의 느낌</b><br />
+        기존 데이터 전체를 다시 검사하지 않고 이후 데이터부터 제약조건을 적용하는 방식으로 이해하면 된다. 대용량 테이블에서 제약조건을 다시 켤 때 운영 부담을 줄일 수 있지만, 기존 데이터의 무결성 보장 범위는 별도로 판단해야 한다.
+      </div>
+    </section>
+
+    <section id="partition" class="section">
+      <h2><span class="page">331~337p</span>9. 파티션 테이블과 Partition Pruning</h2>
+      <p>파티션 테이블은 테이블 또는 인덱스를 <b>파티션 단위로 나누어 저장</b>하는 구조다. 파티션 키에 따라 데이터가 물리적으로 별도 세그먼트에 저장된다.</p>
+      <div class="flow">
+        <div><b>관리적 이점</b><br />파티션 단위 백업, 추가, 삭제, 변경</div>
+        <div><b>성능적 이점</b><br />파티션 단위 조회와 DML, 경합 및 부하 분산</div>
+        <div><b>보관 정책</b><br />오래된 데이터 백업 후 파티션 단위 삭제</div>
+      </div>
+
+      <h3>파티션 유형</h3>
+      <table>
+        <thead><tr><th>유형</th><th>기준</th><th>대표 사용처</th></tr></thead>
+        <tbody>
+          <tr><td>Range</td><td>값의 범위로 분할</td><td>날짜 칼럼 기준 월별/분기별 데이터</td></tr>
+          <tr><td>Hash</td><td>해시 함수 결과로 분산</td><td>데이터 균등 분산, 병렬 처리, DML 경합 분산</td></tr>
+          <tr><td>List</td><td>사용자가 정한 값 목록으로 분할</td><td>지역, 지점, 코드 그룹</td></tr>
+          <tr><td>Composite</td><td>Range/List 안에 서브 파티션 구성</td><td>날짜 + 지역, 날짜 + 해시 등 복합 구조</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Partition Pruning</h3>
+      <p>Partition Pruning은 옵티마이저가 SQL의 테이블과 조건절을 분석하여 <b>불필요한 파티션을 액세스 대상에서 제외</b>하는 기능이다. 파티션 테이블 성능의 핵심이다.</p>
+      <table>
+        <thead><tr><th>구분</th><th>결정 시점</th><th>대표 조건</th></tr></thead>
+        <tbody>
+          <tr><td>Static Pruning</td><td>컴파일 시점</td><td>파티션 키를 상수 조건으로 조회</td></tr>
+          <tr><td>Dynamic Pruning</td><td>실행 시점</td><td>파티션 키를 바인드 변수로 조회</td></tr>
+        </tbody>
+      </table>
+      <div class="note warn">
+        <b>중요</b><br />
+        파티션 키 칼럼을 함수로 감싸거나 데이터 타입이 맞지 않아 묵시적 형 변환이 발생하면 Partition Pruning이 정상 작동하지 않을 수 있다. 예를 들어 날짜 파티션 키에 <code>to_char(date_col)</code> 조건을 걸면 파티션을 잘라내지 못하고 넓게 읽을 위험이 있다.
+      </div>
+    </section>
+
+    <section id="index" class="section">
+      <h2><span class="page">338~343p</span>파티션 인덱스: Local / Global / Prefixed</h2>
+      <h3>Local Partition Index</h3>
+      <p>Local 파티션 인덱스는 테이블 파티션과 <b>1:1로 대응</b>되는 인덱스다. 사용자가 인덱스 파티션 키를 따로 지정하지 않아도 DBMS가 테이블 파티션과의 관계를 자동 유지한다.</p>
+
+      <h3>Global Partition Index</h3>
+      <p>Global 파티션 인덱스는 테이블 파티션과 독립적으로 구성되는 인덱스다. 테이블 파티션 구조와 인덱스 파티션 구조가 반드시 1:1로 맞지 않는다.</p>
+
+      <h3>Prefixed vs Nonprefixed</h3>
+      <table>
+        <thead><tr><th>구분</th><th>의미</th><th>지원</th></tr></thead>
+        <tbody>
+          <tr><td>Prefixed</td><td>파티션 키 칼럼이 인덱스 선두 칼럼에 위치</td><td>Global O / Local O</td></tr>
+          <tr><td>Nonprefixed</td><td>파티션 키가 선두가 아니거나 인덱스에 없음</td><td>Global X / Local O</td></tr>
+        </tbody>
+      </table>
+
+      <h3>인덱스 파티셔닝 가이드</h3>
+      <table>
+        <thead><tr><th>전략</th><th>유리한 경우</th><th>주의점</th></tr></thead>
+        <tbody>
+          <tr><td>NonPartitioned Index</td><td>파티션 키 조건이 자주 누락되는 OLTP, NL Join의 Inner 테이블 접근, ORDER BY 대체 목적</td><td>테이블 파티션 이동/삭제 시 Unusable 가능</td></tr>
+          <tr><td>Global Prefixed Index</td><td>인덱스 경합 분산, 여러 Local 인덱스 파티션 접근이 비효율적인 경우</td><td>파티션 이동/삭제 시 Unusable 가능</td></tr>
+          <tr><td>Local Index</td><td>파티션 단위 관리와 함께 움직이는 구조, 파티션 키 조건이 잘 들어오는 경우</td><td>파티션 키 조건이 없으면 여러 인덱스 파티션을 읽을 수 있음</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="manage" class="section">
+      <h2><span class="page">344~349p</span>파티션 테이블 관리 SQL</h2>
+      <h3>Range Partition Table 생성</h3>
+      <pre><code>create table edu01.t_cust_p
+( cust_no  varchar2(6)   not null,
+  cust_nm  varchar2(50)  not null,
+  addr     varchar2(200) not null,
+  tel_no   varchar2(15)  not null,
+  join_dt  varchar2(8)   default to_char(sysdate, 'yyyymmdd'),
+  class_cd varchar2(4),
+  sal      number        default 0
+)
+partition by range(join_dt)
+( partition pt_202201 values less than ('20220201') tablespace users,
+  partition pt_202202 values less than ('20220301') tablespace users,
+  partition pt_202203 values less than ('20220401') tablespace users,
+  partition pt_202204 values less than ('20220501') tablespace users,
+  partition pt_202205 values less than ('20220601') tablespace users,
+  partition pt_202206 values less than ('20220701') tablespace users,
+  partition pt_202207 values less than ('20220801') tablespace users,
+  partition pt_202208 values less than ('20220901') tablespace users,
+  partition pt_202209 values less than ('20221001') tablespace users,
+  partition pt_202210 values less than ('20221101') tablespace users,
+  partition pt_202211 values less than ('20221201') tablespace users,
+  partition pt_202212 values less than ('20230101') tablespace users,
+  partition pt_max    values less than (maxvalue)  tablespace users
+);</code></pre>
+
+      <h3>파티션 테이블에서 Primary Key</h3>
+      <p>교재에서는 파티션 테이블에서 PK 생성 시 <b>파티션 키 칼럼이 추가되어야 PK 생성 가능</b>하다고 정리한다. 예제에서는 <code>cust_no</code>와 <code>join_dt</code>를 함께 PK 인덱스에 포함한다.</p>
+      <pre><code>create index edu01.pk_t_cust_p
+on edu01.t_cust_p(cust_no, join_dt) local;
+
+alter table edu01.t_cust_p
+add constraint pk_t_cust_p primary key(cust_no, join_dt)
+using index pk_t_cust_p;</code></pre>
+
+      <h3>파티션 추가: ADD PARTITION</h3>
+      <p><code>MAXVALUE</code> 파티션이 없는 경우에는 단순히 새 파티션을 추가할 수 있다.</p>
+      <pre><code>alter table edu01.t_cust_p
+add partition pt_202301
+values less than ('20230201') tablespace users;</code></pre>
+
+      <h3>파티션 추가: SPLIT PARTITION</h3>
+      <p><code>MAXVALUE</code> 파티션이 이미 있으면 새 범위를 추가하는 대신 기존 <code>pt_max</code>를 쪼개야 한다.</p>
+      <pre><code>alter table edu01.t_cust_p
+split partition pt_max at ('20230201')
+into (
+  partition pt_202301 tablespace users,
+  partition pt_max    tablespace users
+);</code></pre>
+      <div class="note warn">
+        <b>장애 포인트</b><br />
+        Split, Drop, Truncate 같은 파티션 작업은 Non Partitioned Index를 Unusable 상태로 만들 수 있다. 특히 PK 인덱스가 Unusable이 되면 데이터 입력과 삭제가 막히는 장애로 이어질 수 있다.
+      </div>
+
+      <h3>파티션 이름 변경 / 삭제</h3>
+      <pre><code>alter table edu01.t_cust_p
+rename partition pt_202210 to pt2022101;
+
+alter table edu01.t_cust_p
+drop partition pt_max;</code></pre>
+
+      <h3>파티션 인덱스 생성</h3>
+      <pre><code>-- Non-partitioned index: 일반 인덱스 생성과 동일
+create index edu01.ix_cust_p01
+on edu01.t_cust_p(join_dt)
+tablespace users;
+
+-- Local partitioned index: 테이블 파티션과 동일 영역에 생성
+create index edu01.ix_cust_p01
+on edu01.t_cust_p(join_dt) local;</code></pre>
+    </section>
+
+    <section id="ops" class="section">
+      <h2>실무 DBA 관점 최종 정리</h2>
+      <table>
+        <thead><tr><th>주제</th><th>운영에서 보는 관점</th><th>확인 포인트</th></tr></thead>
+        <tbody>
+          <tr><td>Clustered Index</td><td>같이 읽는 데이터를 물리적으로 모아 I/O를 줄이는 구조</td><td>체인 증가, DML 비용, 실제 조인 패턴</td></tr>
+          <tr><td>Primary Key</td><td>논리적 무결성과 물리적 인덱스가 연결됨</td><td>PK 인덱스 위치, 칼럼 수, 기존 인덱스 재사용 여부</td></tr>
+          <tr><td>Foreign Key</td><td>참조 무결성 보장. 하지만 FK 인덱스 없으면 Lock/I/O 문제 발생 가능</td><td>FK 인덱스 존재 여부, cascade 사용 여부</td></tr>
+          <tr><td>Partition Table</td><td>대용량 테이블을 관리 단위와 성능 단위로 쪼개는 구조</td><td>파티션 키 설계, 보관 주기, pruning 가능 조건</td></tr>
+          <tr><td>Partition Pruning</td><td>파티션 성능의 핵심. 필요한 파티션만 읽게 함</td><td>파티션 키 가공 여부, 묵시적 형 변환 여부</td></tr>
+          <tr><td>Local Index</td><td>파티션 테이블 관리와 궁합이 좋음</td><td>조건절에 파티션 키가 들어오는지</td></tr>
+          <tr><td>Global / NonPartitioned Index</td><td>OLTP 조회에는 유리할 수 있으나 파티션 관리 작업에 취약</td><td>Unusable 발생 가능성, rebuild 계획</td></tr>
+        </tbody>
+      </table>
+      <div class="note ok">
+        <b>핵심 한 줄</b><br />
+        이 범위의 핵심은 “오브젝트를 그냥 만드는 법”이 아니라, <b>무결성 제약조건과 파티션/인덱스 구조가 운영 중 DML, 조회 성능, 장애 포인트에 어떤 영향을 주는지</b>를 이해하는 것이다.
+      </div>
+    </section>
+
+    <div class="footer">Source: DBA과정 통합버전(2026.03.21), 321~349페이지</div>
+  </main>
+</body>
+</html>
