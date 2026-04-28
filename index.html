@@ -316,18 +316,65 @@
           </div>
         </div>
         <div class="item">
-  <a href="oracle_dba_notes_394_411.html">
-    394~411페이지 · Direct Path I/O / CTAS / APPEND / NOLOGGING /
-    RAC Cache Fusion
+          <a href="oracle_dba_notes_394_411.html">
+            394~411페이지 · Direct Path I/O / CTAS / APPEND / NOLOGGING / RAC
+            Cache Fusion
+          </a>
+          <div class="small">
+            Buffer Cache를 우회하는 Direct Path I/O 구조, APPEND / CTAS /
+            NOLOGGING을 활용한 대량 적재 전략, HWM과 Exclusive Table Lock, redo
+            최소화와 복구 리스크, direct path read/write wait event, RAC 환경의
+            Cache Fusion과 gc wait event, Dynamic Remastering까지 실무 기준으로
+            정리
+          </div>
+        </div>
+        <div class="item">
+          <a href="oracle_dba_notes_416_437.html">
+            416~437페이지 · Job Scheduler / DBMS_JOB / DBMS_SCHEDULER / Job
+            Queue 운영
+          </a>
+          <div class="small">
+            DB 내부 자동 실행 작업인 Job Scheduler 구조, DBMS_JOB의 submit /
+            change / run / remove와 job_queue_processes 설정, DBMS_SCHEDULER의
+            create_job / enable / stop_job / drop_job 흐름, 실행 이력 확인과
+            장애 추적, commit 필요 여부와 실무 운영 포인트까지 DBA 기준으로 정리
+          </div>
+        </div>
+        <div class="item">
+          <a href="oracle_dba_notes_498_514.html">
+            498~514페이지 · Oracle Multitenant / PDB 운영 / User / Tablespace
+          </a>
+          <div class="small">
+            CDB와 PDB 구조, PDB$SEED 기반 PDB 생성, file_name_convert와 OMF
+            개념, PDB 기동/종료 및 접속 방식, Plug / Unplug를 통한 PDB 단위
+            분리·재연결, 멀티테넌트 환경의 User 관리와 CON_ID 기준 Tablespace /
+            Datafile 구분까지 DBA 운영 관점으로 정리
+          </div>
+        </div>
+        <div class="item">
+  <a href="oracle_dba_notes_522_528_archive_standby.html">
+    522~528페이지 · Archive Mode / Redo Log Switch / Standby 개념 정리
   </a>
   <div class="small">
-    Buffer Cache를 우회하는 Direct Path I/O 구조, APPEND / CTAS /
-    NOLOGGING을 활용한 대량 적재 전략, HWM과 Exclusive Table Lock,
-    redo 최소화와 복구 리스크, direct path read/write wait event,
-    RAC 환경의 Cache Fusion과 gc wait event, Dynamic Remastering까지
-    실무 기준으로 정리
+    Archive Mode의 필요성, Redo Log와 Archive Log의 차이, Log Switch 발생 시
+    LGWR와 ARCn의 동작, ARCHIVELOG / NOARCHIVELOG 차이, 강제 Log Switch 목적,
+    Archive Destination Full 장애 위험, Restore와 Recovery 구분, Standby DB와
+    Data Guard Sync 확인까지 DBA 운영 관점으로 정리
   </div>
 </div>
+        <div class="item">
+          <a href="oracle_dba_notes_multitenant_concepts.html">
+            Oracle Multitenant 개념 정리 · CDB / PDB / PDB$SEED / Plug·Unplug /
+            Tablespace·Datafile
+          </a>
+          <div class="small">
+            CDB와 PDB의 구조적 관계, PDB$SEED를 이용한 PDB 생성 원리,
+            file_name_convert와 OMF의 차이, Plug / Unplug가 의미하는 PDB 단위
+            분리·이관·재연결 흐름, CON_ID 기준 User / Tablespace / Datafile
+            해석, 실제 Row 데이터와 Data Dictionary 메타데이터의 저장 구조까지
+            통합 정리
+          </div>
+        </div>
         <div class="item">
           <a href="oracle_dba_pressure_cases.html"
             >실무 병목 분석 · logical read / physical read / redo / parse /

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>498~514페이지 · Oracle Multitenant / PDB 운영 / User / Tablespace</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.75;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 28px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #1d4ed8;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(29, 78, 216, 0.18);
+    }
+
+    .hero {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      margin-bottom: 28px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .eyebrow {
+      font-size: 13px;
+      color: #64748b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.35;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+    }
+
+    h2 {
+      margin-top: 42px;
+      padding-top: 24px;
+      border-top: 1px solid #dbe4ef;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+
+    h3 {
+      margin-top: 28px;
+      font-size: 18px;
+      color: #1e293b;
+    }
+
+    .summary {
+      margin-top: 20px;
+      padding: 20px 22px;
+      border-left: 5px solid #2563eb;
+      background: #eff6ff;
+      border-radius: 14px;
+      color: #1e3a5f;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 26px 30px;
+      margin: 22px 0;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+      border: 1px solid #e2e8f0;
+    }
+
+    ul {
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    code {
+      font-family: "Consolas", "Menlo", monospace;
+      background: #eaf1fb;
+      color: #0f172a;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      font-weight: 600;
+    }
+
+    pre {
+      background: #111827;
+      color: #f8fafc;
+      padding: 20px 22px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.7;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    pre code {
+      background: transparent;
+      color: #f8fafc;
+      padding: 0;
+      border-radius: 0;
+      font-size: inherit;
+      font-weight: 500;
+      display: block;
+      white-space: pre-wrap;
+    }
+
+    .warn {
+      background: #fff7ed;
+      border-left: 5px solid #f97316;
+      color: #7c2d12;
+    }
+
+    .ops {
+      background: #eef6ff;
+      border-left: 5px solid #3b82f6;
+      color: #1e3a5f;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 15px;
+      border: 1px solid #dbe4ef;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border-bottom: 1px solid #dbe4ef;
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef4fb;
+      color: #1e3a5f;
+      font-weight: 700;
+    }
+
+    td {
+      background: #ffffff;
+      color: #1e293b;
+    }
+
+    .footer-nav {
+      margin-top: 52px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a href="index.html" class="back">← 메인 인덱스로 돌아가기</a>
+
+    <section class="hero">
+      <div class="eyebrow">Oracle DB Admin · 498~514페이지</div>
+      <h1>Oracle Multitenant · PDB 기동/종료, 접속, 생성, Unplug/Plug, User 관리, Tablespace 조회</h1>
+      <div class="summary">
+        이 범위는 Oracle Multitenant 환경에서 실제 DBA가 자주 다루는 PDB 운영 흐름을 정리한다.
+        핵심은 CDB와 PDB의 역할을 구분하고, 업무용 데이터와 사용자는 가급적 PDB 안에서 관리하며,
+        PDB의 상태 확인, 기동/종료, 접속, 생성, Unplug/Plug, User/권한/Tablespace 조회 흐름을 익히는 것이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>1. PDB 상태 확인의 기본</h2>
+      <p>
+        멀티테넌트 환경에서는 하나의 CDB 안에 여러 PDB가 존재한다. 따라서 DBA는 먼저
+        현재 컨테이너 구성과 각 PDB의 상태를 확인해야 한다.
+      </p>
+
+      <pre><code>select con_id, name, open_mode
+from v$containers;</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>항목</th>
+              <th>의미</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>CDB$ROOT</code></td>
+              <td>CDB의 루트 컨테이너. 전체 메타데이터와 공통 관리 영역.</td>
+            </tr>
+            <tr>
+              <td><code>PDB$SEED</code></td>
+              <td>새 PDB를 만들 때 복제 원본이 되는 템플릿 PDB. 일반적으로 READ ONLY.</td>
+            </tr>
+            <tr>
+              <td><code>ORCLPDB</code>, <code>PDBTEST</code></td>
+              <td>실제 업무용 데이터와 사용자를 담는 개별 PDB.</td>
+            </tr>
+            <tr>
+              <td><code>READ WRITE</code></td>
+              <td>사용자가 접속해 DML/DDL 작업을 수행할 수 있는 상태.</td>
+            </tr>
+            <tr>
+              <td><code>MOUNTED</code></td>
+              <td>PDB는 인식되어 있지만 아직 열리지 않아 일반 업무 사용은 불가능한 상태.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. PDB 기동과 종료</h2>
+
+      <h3>2-1. PDB 기동</h3>
+      <p>
+        PDB가 <code>MOUNTED</code> 상태라면 사용자가 접속할 수 있도록 <code>open</code> 해야 한다.
+      </p>
+
+      <pre><code>alter pluggable database pdbtest open;
+
+select con_id, name, open_mode
+from v$containers;</code></pre>
+
+      <p>
+        실행 후 <code>PDBTEST</code>의 <code>OPEN_MODE</code>가 <code>READ WRITE</code>로 바뀌면
+        해당 PDB는 정상 사용 가능한 상태다.
+      </p>
+
+      <h3>2-2. PDB 종료</h3>
+      <p>
+        특정 PDB만 종료할 때는 CDB 전체를 내리는 것이 아니라 해당 PDB만 close 한다.
+      </p>
+
+      <pre><code>alter pluggable database pdbtest close immediate;
+
+select con_id, name, open_mode
+from v$containers;</code></pre>
+
+      <p>
+        종료 후 <code>PDBTEST</code>는 다시 <code>MOUNTED</code> 상태가 된다.
+      </p>
+
+      <div class="summary ops">
+        <strong>운영 관점</strong><br />
+        멀티테넌트 구조의 장점은 CDB 전체를 중단하지 않고 PDB 단위로 업무 DB를 열고 닫을 수 있다는 점이다.
+        특정 업무 시스템만 점검하거나 이관할 때 PDB 단위 제어가 가능하다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. PDB 접속 방식</h2>
+      <p>
+        PDB 접속 방식은 크게 두 가지다.
+      </p>
+
+      <ul>
+        <li>CDB에 접속한 뒤 <code>alter session set container</code>로 PDB로 이동</li>
+        <li><code>tnsnames.ora</code>에 PDB 서비스를 등록한 뒤 PDB로 직접 접속</li>
+      </ul>
+
+      <h3>3-1. 세션 컨테이너 변경 방식</h3>
+
+      <pre><code>alter session set container=orclpdb;
+
+alter session set container=cdb$root;</code></pre>
+
+      <p>
+        이 방식은 실습이나 관리자 작업에서는 편하지만, 실무 운영에서는 현재 세션이 어느 컨테이너를 보고 있는지
+        항상 확인해야 한다.
+      </p>
+
+      <pre><code>show con_name;</code></pre>
+
+      <div class="summary warn">
+        <strong>주의</strong><br />
+        실무에서는 무심코 <code>CDB$ROOT</code>에서 사용자나 오브젝트를 만들면 의도와 다른 공통 영역에 작업할 수 있다.
+        특히 업무용 계정과 업무용 테이블은 일반적으로 PDB 안에서 생성하는 것이 바람직하다.
+      </div>
+
+      <h3>3-2. tnsnames.ora를 통한 PDB 직접 접속</h3>
+
+      <pre><code>orclpdb =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-PNO9I3P)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orclpdb)
+    )
+  )
+
+orcl =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = DESKTOP-PNO9I3P)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orcl)
+    )
+  )</code></pre>
+
+      <p>
+        PDB별 서비스명을 분리해두면 애플리케이션이나 SQL Developer에서 특정 PDB로 바로 접속할 수 있다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>4. PDB 생성</h2>
+      <p>
+        새 PDB는 <code>CDB$ROOT</code>에서 생성한다. 예제에서는 <code>PDBTEST</code>를 생성한다.
+      </p>
+
+      <pre><code>alter session set container = cdb$root;
+
+create pluggable database pdbtest
+admin user pdbtestusr identified by pdbtestusr1004
+file_name_convert=(
+  'C:\app\yoon\oradata\ORCL\pdbseed\',
+  'C:\app\yoon\oradata\ORCL\pdbtest\'
+);</code></pre>
+
+      <p>
+        생성 직후 PDB는 보통 <code>MOUNTED</code> 상태다. 따라서 실제 사용하려면 별도로 open 해야 한다.
+      </p>
+
+      <pre><code>select con_id, name, open_mode
+from v$containers;
+
+alter pluggable database pdbtest open;</code></pre>
+
+      <div class="summary">
+        <strong>OMF 관련 메모</strong><br />
+        OMF가 설정되어 있으면 <code>file_name_convert</code>를 직접 지정하지 않아도 Oracle이 파일 경로를 관리할 수 있다.
+        관련 파라미터는 <code>db_create_file_dest</code>다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. PDB Unplug / Drop / Plug</h2>
+
+      <h3>5-1. PDB Unplug</h3>
+      <p>
+        PDB를 다른 CDB에 옮기거나, 구조적으로 분리해 보관하려면 PDB를 닫고 XML 메타데이터 파일로 unplug 한다.
+      </p>
+
+      <pre><code>alter pluggable database pdbtest close;
+
+alter pluggable database pdbtest unplug into
+'C:\app\yoon\oradata\ORCL\pdbtest\pdbtest.xml';</code></pre>
+
+      <p>
+        이때 생성되는 XML 파일은 PDB를 다시 plug 하기 위한 메타데이터 파일이다.
+      </p>
+
+      <h3>5-2. PDB Drop - 데이터 파일 유지</h3>
+      <p>
+        다시 plug 할 가능성이 있으면 데이터 파일을 삭제하지 않고 PDB만 CDB에서 제거한다.
+      </p>
+
+      <pre><code>drop pluggable database pdbtest keep datafiles;</code></pre>
+
+      <div class="summary warn">
+        <strong>중요</strong><br />
+        <code>keep datafiles</code>는 PDB 정의만 제거하고 실제 데이터 파일은 남긴다.
+        반대로 파일까지 삭제하면 재 Plug가 어려워질 수 있으므로 실무에서는 목적을 명확히 확인해야 한다.
+      </div>
+
+      <h3>5-3. PDB Plug</h3>
+      <p>
+        보관해둔 XML을 이용해 PDB를 다시 CDB에 연결한다.
+      </p>
+
+      <pre><code>create pluggable database pdbtest using
+'C:\app\yoon\oradata\ORCL\pdbtest\pdbtest.xml'
+nocopy;</code></pre>
+
+      <p>
+        <code>nocopy</code>는 기존 데이터 파일을 복사하지 않고 그대로 사용한다는 의미다.
+        Plug 직후에는 <code>MOUNTED</code> 상태일 수 있으므로 open 작업이 필요하다.
+      </p>
+
+      <pre><code>select con_id, name, open_mode
+from v$containers;
+
+alter pluggable database all open;</code></pre>
+
+      <div class="summary ops">
+        <strong>운영 관점</strong><br />
+        Unplug / Plug는 PDB 단위 이관, 분리, 재연결 작업의 핵심이다.
+        단순 백업/복구와는 다르게 “PDB를 컨테이너에서 떼어냈다가 다시 붙이는” 구조적 이동에 가깝다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6. 멀티테넌트 환경의 User 관리</h2>
+
+      <h3>6-1. CDB와 PDB의 User 생성 차이</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>User 생성 특징</th>
+              <th>운영 권장 방향</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CDB</td>
+              <td>일반 User를 만들려면 계정명 앞에 <code>C##</code>을 붙여야 한다.</td>
+              <td>CDB는 메타데이터와 공통 관리 영역이므로 업무용 계정 생성을 최소화한다.</td>
+            </tr>
+            <tr>
+              <td>PDB</td>
+              <td><code>C##</code> 없이 일반 계정 생성 방식과 동일하게 생성 가능하다.</td>
+              <td>업무용 데이터와 업무용 계정은 PDB에 만드는 것이 바람직하다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary warn">
+        <strong>핵심 주의사항</strong><br />
+        CDB는 고유의 메타데이터 관리를 위한 영역이다.
+        따라서 특별한 이유 없이 CDB에 <code>C##</code> 계정을 만들어 업무용으로 사용하는 것은 권장되지 않는다.
+      </div>
+
+      <h3>6-2. Password 관리</h3>
+      <ul>
+        <li><code>CDB$ROOT</code>와 PDB에 모두 존재하는 계정은 <code>CDB$ROOT</code>에서만 비밀번호 변경 가능</li>
+        <li>변경하면 PDB에도 자동 적용</li>
+        <li>PDB에만 존재하는 계정은 해당 PDB에서 비밀번호 변경</li>
+      </ul>
+
+      <h3>6-3. 권한 관리</h3>
+      <ul>
+        <li>CDB와 PDB의 권한은 별도로 관리된다.</li>
+        <li>같은 이름의 계정처럼 보여도 컨테이너별 권한은 별도로 부여해야 한다.</li>
+        <li>업무 권한은 해당 업무 PDB에서 확인하고 부여하는 것이 안전하다.</li>
+      </ul>
+
+      <h3>6-4. 계정 조회</h3>
+
+      <pre><code>alter session set container = cdb$root;
+
+select con_id, user_id, username
+from cdb_users
+where username in ('SYS', 'SYSTEM', 'DIP', 'YOON')
+order by con_id, username;</code></pre>
+
+      <p>
+        <code>con_id</code>는 컨테이너 식별 번호다. 같은 username이라도 <code>con_id</code>가 다르면
+        서로 다른 컨테이너에 존재하는 계정으로 해석해야 한다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>7. 멀티테넌트 환경의 Tablespace / Datafile 조회</h2>
+      <p>
+        CDB 전체 관점에서 각 컨테이너별 데이터 파일과 테이블스페이스를 보려면
+        <code>cdb_data_files</code>를 조회한다.
+      </p>
+
+      <pre><code>alter session set container = cdb$root;
+
+select con_id, file_id, file_name, tablespace_name
+from cdb_data_files
+order by con_id;</code></pre>
+
+      <p>
+        조회 결과에서는 <code>CON_ID</code>별로 파일 경로가 나뉜다.
+        예를 들어 <code>CDB$ROOT</code>, <code>ORCLPDB</code>, <code>PDBTEST</code>가 각각
+        별도의 SYSTEM, SYSAUX, USERS 등의 데이터 파일을 가진다.
+      </p>
+
+      <div class="summary ops">
+        <strong>실무 해석</strong><br />
+        멀티테넌트 환경에서는 “테이블스페이스 이름이 같다”는 것만 보고 같은 저장공간이라고 판단하면 안 된다.
+        <code>CON_ID</code>와 파일 경로를 함께 봐야 어느 PDB의 데이터 파일인지 정확히 구분할 수 있다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>8. 이 범위의 실무 DBA 관점 핵심 정리</h2>
+
+      <ul>
+        <li>PDB 상태 확인은 <code>v$containers</code>에서 시작한다.</li>
+        <li>PDB는 생성 직후 보통 <code>MOUNTED</code> 상태이므로 open 해야 업무 사용 가능하다.</li>
+        <li>PDB 접속 전에는 항상 현재 컨테이너를 확인해야 한다.</li>
+        <li>업무용 User와 업무용 데이터는 CDB가 아니라 PDB에 두는 것이 바람직하다.</li>
+        <li>CDB의 <code>C##</code> 계정은 공통 계정 성격이므로 남용하지 않는다.</li>
+        <li>Password와 권한은 CDB/PDB 구조에 따라 적용 범위가 다르다.</li>
+        <li>Unplug / Plug는 PDB 단위 이동과 재연결의 핵심 절차다.</li>
+        <li><code>keep datafiles</code> 여부는 재 Plug 가능성과 직결되므로 신중히 선택한다.</li>
+        <li>Tablespace와 Datafile은 <code>CON_ID</code> 기준으로 구분해서 봐야 한다.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>9. 기억할 운영 흐름</h2>
+
+      <pre><code>-- 1. CDB ROOT 접속
+alter session set container = cdb$root;
+
+-- 2. 전체 컨테이너 상태 확인
+select con_id, name, open_mode
+from v$containers;
+
+-- 3. PDB 열기
+alter pluggable database pdbtest open;
+
+-- 4. PDB 닫기
+alter pluggable database pdbtest close immediate;
+
+-- 5. PDB로 세션 이동
+alter session set container = pdbtest;
+
+-- 6. 다시 CDB ROOT로 이동
+alter session set container = cdb$root;
+
+-- 7. PDB별 데이터 파일 확인
+select con_id, file_id, file_name, tablespace_name
+from cdb_data_files
+order by con_id;</code></pre>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html" class="back">← 메인 인덱스로 돌아가기</a>
+    </div>
+  </main>
+</body>
+</html>

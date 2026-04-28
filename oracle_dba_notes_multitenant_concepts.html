@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oracle Multitenant 핵심 개념 정리 · PDB / CDB / Plug / Tablespace</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.75;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 28px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #1d4ed8;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(29, 78, 216, 0.18);
+    }
+
+    .hero {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      margin-bottom: 28px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .eyebrow {
+      font-size: 13px;
+      color: #64748b;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.35;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+    }
+
+    h2 {
+      margin-top: 42px;
+      padding-top: 24px;
+      border-top: 1px solid #dbe4ef;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+
+    h3 {
+      margin-top: 28px;
+      font-size: 18px;
+      color: #1e293b;
+    }
+
+    .summary {
+      margin-top: 20px;
+      padding: 20px 22px;
+      border-left: 5px solid #2563eb;
+      background: #eff6ff;
+      border-radius: 14px;
+      color: #1e3a5f;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 26px 30px;
+      margin: 22px 0;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+      border: 1px solid #e2e8f0;
+    }
+
+    .warn {
+      background: #fff7ed;
+      border-left: 5px solid #f97316;
+      color: #7c2d12;
+    }
+
+    .ops {
+      background: #eef6ff;
+      border-left: 5px solid #3b82f6;
+      color: #1e3a5f;
+    }
+
+    .good {
+      background: #ecfdf5;
+      border-left: 5px solid #10b981;
+      color: #064e3b;
+    }
+
+    ul {
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    code {
+      font-family: "Consolas", "Menlo", monospace;
+      background: #eaf1fb;
+      color: #0f172a;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      font-weight: 600;
+    }
+
+    pre {
+      background: #111827;
+      color: #f8fafc;
+      padding: 20px 22px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.7;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    pre code {
+      background: transparent;
+      color: #f8fafc;
+      padding: 0;
+      border-radius: 0;
+      font-size: inherit;
+      font-weight: 500;
+      display: block;
+      white-space: pre-wrap;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 15px;
+      border: 1px solid #dbe4ef;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border-bottom: 1px solid #dbe4ef;
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef4fb;
+      color: #1e3a5f;
+      font-weight: 700;
+    }
+
+    td {
+      background: #ffffff;
+      color: #1e293b;
+    }
+
+    .diagram {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 18px;
+      padding: 22px;
+      font-family: "Consolas", "Menlo", monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      overflow-x: auto;
+    }
+
+    .footer-nav {
+      margin-top: 52px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <a href="index.html" class="back">← 메인 인덱스로 돌아가기</a>
+
+    <section class="hero">
+      <div class="eyebrow">Oracle Multitenant · 개념 보강 정리</div>
+      <h1>CDB / PDB / PDB$SEED / Plug·Unplug / Tablespace·Datafile 관계 정리</h1>
+
+      <div class="summary">
+        이 문서는 498~514페이지를 공부하면서 추가로 헷갈렸던 개념들을 하나의 흐름으로 묶어 정리한 것이다.
+        핵심은 PDB를 단순한 계정 묶음이 아니라, CDB 안에 꽂혀 있는 독립적인 데이터베이스 단위로 이해하는 것이다.
+        Plug / Unplug는 접근 권한 제어가 아니라 PDB를 CDB에 연결하거나 분리하는 구조적 작업이며,
+        Tablespace와 Datafile은 반드시 CON_ID 기준으로 어느 컨테이너 소속인지 구분해야 한다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>1. 전체 구조를 먼저 잡기</h2>
+
+      <p>
+        Oracle Multitenant 구조에서는 하나의 Oracle Database 안에 여러 개의 컨테이너가 존재한다.
+        여기서 가장 중요한 구분은 <code>CDB</code>와 <code>PDB</code>다.
+      </p>
+
+      <div class="diagram">
+CDB = 큰 Oracle 본체 / 컨테이너 데이터베이스
+
+CDB
+│
+├─ CDB$ROOT   : 전체 CDB의 루트 관리 영역
+├─ PDB$SEED   : 새 PDB를 만들 때 사용하는 읽기 전용 템플릿
+├─ ORCLPDB    : 실제 업무용 PDB
+└─ PDBTEST    : 새로 만든 업무용 PDB
+      </div>
+
+      <div class="summary">
+        <strong>핵심 비유</strong><br />
+        CDB는 건물 전체이고, PDB는 그 건물 안에 들어있는 독립 사무실에 가깝다.
+        User는 그 사무실 안의 사용자이고, Tablespace는 그 사무실이 쓰는 저장 구역이며,
+        Datafile은 실제 디스크에 존재하는 저장 파일이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. PDB$SEED는 무엇인가?</h2>
+
+      <p>
+        Oracle은 새 PDB를 만들 때 빈 데이터베이스를 처음부터 만드는 것이 아니다.
+        기본으로 제공되는 <code>PDB$SEED</code>라는 읽기 전용 템플릿 PDB를 복제해서 새 PDB를 만든다.
+      </p>
+
+      <div class="diagram">
+PDB$SEED
+   ↓ 복제
+PDBTEST
+      </div>
+
+      <p>
+        따라서 <code>PDB$SEED</code>는 새 PDB 생성을 위한 원본 템플릿이다.
+        일반적으로 직접 데이터를 넣거나 수정하는 공간이 아니라, Oracle이 새 PDB를 만들 때 참조하는 기본 틀이다.
+      </p>
+
+      <div class="summary warn">
+        <strong>오해 주의</strong><br />
+        <code>PDBTEST</code>를 만들었다고 해서 앞으로 <code>PDBTEST</code>가 새 템플릿이 되는 것은 아니다.
+        기본적으로 새 PDB 생성의 원본은 여전히 <code>PDB$SEED</code>다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. file_name_convert는 무엇을 하는가?</h2>
+
+      <p>
+        <code>file_name_convert</code>는 새 PDB를 만들 때 PDB$SEED의 데이터파일을 복제하면서,
+        복제된 파일을 어느 경로에 저장할지 지정하는 옵션이다.
+      </p>
+
+      <pre><code>file_name_convert=(
+  'C:\app\yoon\oradata\ORCL\pdbseed\',
+  'C:\app\yoon\oradata\ORCL\pdbtest\'
+);</code></pre>
+
+      <div class="diagram">
+원본 경로:
+C:\app\yoon\oradata\ORCL\pdbseed\
+
+복제된 새 PDB의 저장 경로:
+C:\app\yoon\oradata\ORCL\pdbtest\
+      </div>
+
+      <p>
+        즉, 이 설정은 “앞으로 PDBTEST를 템플릿으로 쓰겠다”는 뜻이 아니다.
+        단지 PDB$SEED에서 복제된 데이터파일을 <code>pdbtest</code> 폴더에 저장하라는 의미다.
+      </p>
+
+      <div class="summary good">
+        <strong>정확한 해석</strong><br />
+        복제 원본은 <code>PDB$SEED</code>이고,
+        <code>file_name_convert</code>는 복제본 데이터파일의 저장 위치를 지정하는 옵션이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. OMF는 무엇인가?</h2>
+
+      <p>
+        <code>OMF</code>는 <strong>Oracle Managed Files</strong>의 약자다.
+        말 그대로 Oracle이 데이터파일의 경로와 파일명을 자동으로 관리하는 기능이다.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>의미</th>
+              <th>특징</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OMF OFF</td>
+              <td>DBA가 파일 경로를 직접 지정</td>
+              <td><code>file_name_convert</code> 같은 옵션으로 경로를 명시해야 한다.</td>
+            </tr>
+            <tr>
+              <td>OMF ON</td>
+              <td>Oracle이 파일 경로와 이름을 자동 관리</td>
+              <td><code>db_create_file_dest</code>에 지정된 위치를 기준으로 파일을 자동 생성한다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <pre><code>show parameter db_create_file_dest;</code></pre>
+
+      <p>
+        <code>db_create_file_dest</code>가 설정되어 있으면 Oracle은 새 PDB 생성 시 필요한 데이터파일을
+        자동으로 적절한 위치에 생성할 수 있다. 그래서 이 경우에는 <code>file_name_convert</code>를 직접 지정하지 않아도 된다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>5. Plug / Unplug는 무엇인가?</h2>
+
+      <p>
+        <code>Plug</code>와 <code>Unplug</code>는 계정 권한 제어가 아니다.
+        RAC 노드 접근 제어도 아니다.
+        이것은 PDB를 CDB에 연결하거나 CDB에서 분리하는 작업이다.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>작업</th>
+              <th>의미</th>
+              <th>비유</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Unplug</td>
+              <td>PDB를 현재 CDB의 관리 목록에서 분리한다.</td>
+              <td>외장 SSD를 현재 PC에서 안전하게 분리하는 것</td>
+            </tr>
+            <tr>
+              <td>Plug</td>
+              <td>분리된 PDB를 CDB에 다시 연결한다.</td>
+              <td>외장 SSD를 다른 PC에 다시 꽂아 인식시키는 것</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="diagram">
+Unplug 전:
+
+CDB_A
+├─ ORCLPDB
+└─ PDBTEST
+
+
+Unplug 후:
+
+CDB_A
+└─ ORCLPDB
+
+디스크에는 여전히:
+- PDBTEST의 datafile들
+- PDBTEST.xml 메타데이터 파일
+      </div>
+
+      <p>
+        Unplug를 하면 PDB의 데이터파일 자체가 바로 삭제되는 것은 아니다.
+        Oracle은 해당 PDB를 다시 연결할 때 필요한 메타데이터를 XML 파일로 만들 수 있다.
+        이 XML은 데이터 자체가 아니라, “이 PDB가 어떤 파일과 구조를 가지고 있는지”를 설명하는 정보에 가깝다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>6. Plug / Unplug는 언제 사용하는가?</h2>
+
+      <p>
+        Plug / Unplug는 PDB 단위의 이동, 분리, 재연결 작업에 사용된다.
+        단순 백업/복구와는 성격이 다르다.
+      </p>
+
+      <ul>
+        <li>개발 서버의 PDB를 테스트 서버의 CDB로 옮길 때</li>
+        <li>특정 업무용 PDB만 다른 CDB로 이관할 때</li>
+        <li>CDB 업그레이드나 서버 이전 과정에서 PDB 단위로 이동할 때</li>
+        <li>특정 PDB를 분리해 보관했다가 다시 연결할 때</li>
+        <li>PDB 단위로 업무 DB를 독립적으로 관리하고 싶을 때</li>
+      </ul>
+
+      <div class="diagram">
+CDB_A
+└─ PDBTEST
+     ↓ unplug
+
+PDBTEST.xml + datafiles
+     ↓ plug
+
+CDB_B
+└─ PDBTEST
+      </div>
+
+      <div class="summary ops">
+        <strong>운영 관점</strong><br />
+        Plug / Unplug는 “사용자 접속을 허용하거나 차단하는 작업”이 아니라,
+        PDB라는 데이터베이스 단위를 CDB 사이에서 분리하거나 연결하는 구조적 작업이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>7. 왜 재 Plug 가능성을 따져야 하는가?</h2>
+
+      <p>
+        PDB를 Drop할 때 실제 데이터파일을 남길 수도 있고 삭제할 수도 있다.
+        이 차이가 재 Plug 가능성과 직접 연결된다.
+      </p>
+
+      <pre><code>drop pluggable database pdbtest keep datafiles;</code></pre>
+
+      <p>
+        <code>keep datafiles</code>는 PDB를 CDB의 관리 목록에서는 제거하지만,
+        실제 데이터파일은 디스크에 남겨두겠다는 뜻이다.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>선택</th>
+              <th>결과</th>
+              <th>재 Plug 가능성</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>keep datafiles</code></td>
+              <td>데이터파일을 남긴다.</td>
+              <td>XML 메타데이터와 데이터파일이 있으면 다시 Plug 가능성이 있다.</td>
+            </tr>
+            <tr>
+              <td>데이터파일까지 삭제</td>
+              <td>실제 PDB 데이터파일이 사라진다.</td>
+              <td>XML만 있어도 실제 데이터가 없으므로 재 Plug가 어렵다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary warn">
+        <strong>중요</strong><br />
+        Plug는 아무 때나 되는 것이 아니다.
+        재 Plug를 하려면 PDB의 메타데이터 XML, 실제 데이터파일, 그리고 호환되는 CDB 환경이 필요하다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>8. User와 CON_ID 관계</h2>
+
+      <p>
+        같은 이름의 User라도 <code>CON_ID</code>가 다르면 다른 컨테이너에 존재하는 별개의 계정으로 봐야 한다.
+      </p>
+
+      <div class="diagram">
+CON_ID 3 / USERNAME = APP
+→ ORCLPDB 안의 APP 계정
+
+CON_ID 4 / USERNAME = APP
+→ PDBTEST 안의 APP 계정
+      </div>
+
+      <p>
+        이름은 같아도 소속 PDB가 다르면 서로 다른 계정이다.
+        같은 이름의 사람이 다른 회사에 존재할 수 있는 것과 비슷하다.
+      </p>
+
+      <div class="summary warn">
+        <strong>주의</strong><br />
+        다른 PDB에 같은 이름의 계정이 있다고 해서 현재 PDB에서도 자동으로 접속 가능한 것은 아니다.
+        해당 컨테이너에 그 계정이 실제로 존재해야 접속할 수 있다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>9. 현재 컨테이너 확인이 중요한 이유</h2>
+
+      <p>
+        Multitenant 환경에서는 현재 세션이 어느 컨테이너에 접속해 있는지 반드시 확인해야 한다.
+        그렇지 않으면 의도하지 않은 위치에 User나 Object를 만들 수 있다.
+      </p>
+
+      <pre><code>show con_name;</code></pre>
+
+      <pre><code>select sys_context('USERENV', 'CON_NAME') from dual;</code></pre>
+
+      <p>
+        예를 들어 업무용 User를 PDBTEST에 만들려고 했는데,
+        실제 세션이 <code>CDB$ROOT</code>에 있다면 완전히 다른 영역에 작업하는 문제가 생긴다.
+      </p>
+
+      <div class="summary ops">
+        <strong>운영 습관</strong><br />
+        User 생성, Tablespace 조회, Datafile 확인, 권한 부여 작업 전에는 항상 현재 컨테이너를 확인해야 한다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>10. Tablespace와 Datafile 관계</h2>
+
+      <p>
+        <code>Tablespace</code>는 논리적인 저장공간이고,
+        <code>Datafile</code>은 실제 디스크에 존재하는 물리 파일이다.
+      </p>
+
+      <div class="diagram">
+Table
+ ↓
+Segment
+ ↓
+Extent
+ ↓
+Block
+ ↓
+Tablespace
+ ↓
+Datafile
+ ↓
+Disk
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>개념</th>
+              <th>의미</th>
+              <th>예시</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tablespace</td>
+              <td>논리 저장공간</td>
+              <td>USERS, SYSTEM, SYSAUX</td>
+            </tr>
+            <tr>
+              <td>Datafile</td>
+              <td>실제 디스크 파일</td>
+              <td>users01.dbf, system01.dbf</td>
+            </tr>
+            <tr>
+              <td>User의 default tablespace</td>
+              <td>해당 User가 객체를 만들 때 기본으로 사용할 Tablespace</td>
+              <td><code>default tablespace users</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Tablespace가 User마다 반드시 1:1로 존재하는 것은 아니다.
+        여러 User가 같은 Tablespace를 사용할 수 있고,
+        특정 User에게 기본 Tablespace를 지정할 수 있다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>11. 실제 Row 데이터와 메타데이터는 어디에 있는가?</h2>
+
+      <p>
+        테이블의 실제 Row 데이터와 테이블 구조를 설명하는 메타데이터는 구분해서 이해해야 한다.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>내용</th>
+              <th>저장 위치 관점</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>실제 Row 데이터</td>
+              <td>INSERT / UPDATE / DELETE로 다루는 실제 값</td>
+              <td>해당 테이블이 속한 Tablespace의 Datafile 안에 저장</td>
+            </tr>
+            <tr>
+              <td>메타데이터</td>
+              <td>테이블명, 컬럼 구조, 인덱스 정보, 권한 정보</td>
+              <td>Data Dictionary에 저장. 주로 SYSTEM / SYSAUX 영역과 관련</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary">
+        <strong>핵심</strong><br />
+        “테이블이 존재한다”는 정보와 “테이블 안의 실제 데이터”는 다르다.
+        실제 Row 데이터는 해당 객체가 사용하는 Tablespace의 Datafile에 저장되고,
+        객체 구조 정보는 Data Dictionary에 저장된다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>12. 왜 Tablespace와 Datafile은 CON_ID 기준으로 봐야 하는가?</h2>
+
+      <p>
+        Multitenant 환경에서는 여러 컨테이너가 같은 이름의 Tablespace를 가질 수 있다.
+        예를 들어 <code>SYSTEM</code>, <code>SYSAUX</code>, <code>USERS</code>라는 이름은
+        여러 PDB에서 반복될 수 있다.
+      </p>
+
+      <div class="diagram">
+CON_ID 1: CDB$ROOT
+├─ SYSTEM tablespace
+├─ SYSAUX tablespace
+└─ USERS tablespace
+
+CON_ID 3: ORCLPDB
+├─ SYSTEM tablespace
+├─ SYSAUX tablespace
+└─ USERS tablespace
+
+CON_ID 4: PDBTEST
+├─ SYSTEM tablespace
+├─ SYSAUX tablespace
+└─ USERS tablespace
+      </div>
+
+      <p>
+        이름이 같다고 같은 저장공간이라는 뜻이 아니다.
+        <code>CON_ID</code>가 다르면 서로 다른 컨테이너의 별도 저장공간이다.
+      </p>
+
+      <pre><code>select con_id, file_id, file_name, tablespace_name
+from cdb_data_files
+order by con_id;</code></pre>
+
+      <div class="summary warn">
+        <strong>오해 주의</strong><br />
+        같은 내용이 자동으로 다른 PDB에 중복 저장되는 것이 아니다.
+        각 PDB가 자기 데이터를 자기 Tablespace와 Datafile에 저장하는 것이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>13. 같은 이름의 Tablespace라도 내용은 독립적이다</h2>
+
+      <p>
+        예를 들어 <code>ORCLPDB</code>에도 <code>USERS</code> Tablespace가 있고,
+        <code>PDBTEST</code>에도 <code>USERS</code> Tablespace가 있을 수 있다.
+      </p>
+
+      <div class="diagram">
+ORCLPDB.USERS
+→ ORCLPDB 사용자의 테이블 데이터 저장
+
+PDBTEST.USERS
+→ PDBTEST 사용자의 테이블 데이터 저장
+      </div>
+
+      <p>
+        둘 다 이름은 <code>USERS</code>지만 실제 내용은 다르다.
+        ORCLPDB의 데이터가 PDBTEST에 자동 복사되는 것이 아니다.
+      </p>
+
+      <div class="summary good">
+        <strong>정확한 이해</strong><br />
+        같은 이름의 Tablespace가 여러 컨테이너에 있을 수 있다.
+        그러나 <code>CON_ID</code>가 다르면 서로 다른 저장공간이며,
+        저장된 데이터도 독립적이다.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>14. 전체 개념 연결도</h2>
+
+      <div class="diagram">
+CDB
+│
+├─ CDB$ROOT
+│   ├─ 공통 메타데이터
+│   ├─ SYSTEM / SYSAUX
+│   └─ Datafiles
+│
+├─ PDB$SEED
+│   ├─ 새 PDB 생성을 위한 읽기 전용 템플릿
+│   └─ PDB 생성 시 복제 원본
+│
+├─ ORCLPDB
+│   ├─ User / Schema
+│   ├─ Tablespace
+│   ├─ Datafile
+│   └─ 업무 데이터
+│
+└─ PDBTEST
+    ├─ User / Schema
+    ├─ Tablespace
+    ├─ Datafile
+    └─ 업무 데이터
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>15. 최종 핵심 정리</h2>
+
+      <ul>
+        <li><code>CDB</code>는 전체 Oracle Multitenant 본체다.</li>
+        <li><code>PDB</code>는 CDB 안에 존재하는 독립적인 데이터베이스 단위다.</li>
+        <li><code>PDB$SEED</code>는 새 PDB 생성을 위한 읽기 전용 템플릿이다.</li>
+        <li><code>file_name_convert</code>는 PDB$SEED 복제본의 데이터파일 저장 경로를 지정한다.</li>
+        <li><code>OMF</code>가 설정되어 있으면 Oracle이 데이터파일 경로와 이름을 자동 관리한다.</li>
+        <li><code>Plug / Unplug</code>는 계정 권한 제어가 아니라 PDB를 CDB에 연결하거나 분리하는 작업이다.</li>
+        <li><code>Unplug</code>는 PDB를 현재 CDB의 관리 목록에서 분리하는 작업이다.</li>
+        <li><code>Plug</code>는 XML 메타데이터와 데이터파일을 이용해 PDB를 CDB에 다시 연결하는 작업이다.</li>
+        <li><code>CON_ID</code>는 어느 컨테이너 소속인지 구분하는 번호다.</li>
+        <li>같은 username이라도 <code>CON_ID</code>가 다르면 다른 계정이다.</li>
+        <li>같은 Tablespace 이름이라도 <code>CON_ID</code>가 다르면 다른 저장공간이다.</li>
+        <li>Tablespace는 논리 저장공간이고, Datafile은 실제 디스크 파일이다.</li>
+        <li>실제 Row 데이터는 Datafile에 저장되고, 객체 구조 정보는 Data Dictionary에 저장된다.</li>
+        <li>작업 전에는 항상 현재 컨테이너를 확인해야 한다.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>16. 실무에서 가장 조심해야 할 부분</h2>
+
+      <div class="summary warn">
+        <strong>1. 현재 컨테이너 확인</strong><br />
+        User 생성, 권한 부여, Tablespace 조회, Datafile 확인 전에는 반드시 현재 컨테이너를 확인한다.
+      </div>
+
+      <div class="summary warn">
+        <strong>2. CDB$ROOT에 업무용 User를 만들지 않기</strong><br />
+        업무용 User와 업무용 데이터는 일반적으로 PDB 안에서 관리하는 것이 안전하다.
+      </div>
+
+      <div class="summary warn">
+        <strong>3. Tablespace 이름만 보고 판단하지 않기</strong><br />
+        <code>USERS</code>, <code>SYSTEM</code>, <code>SYSAUX</code>라는 이름이 같아도
+        <code>CON_ID</code>가 다르면 다른 컨테이너의 저장공간이다.
+      </div>
+
+      <div class="summary warn">
+        <strong>4. PDB Drop 시 Datafile 보존 여부 확인</strong><br />
+        재 Plug 가능성을 남기려면 XML 메타데이터와 실제 Datafile이 필요하다.
+        따라서 <code>keep datafiles</code> 여부를 신중히 판단해야 한다.
+      </div>
+    </section>
+
+    <div class="footer-nav">
+      <a href="index.html" class="back">← 메인 인덱스로 돌아가기</a>
+    </div>
+  </main>
+</body>
+</html>
